@@ -1,0 +1,9 @@
+# vim swap files
+*.swp
+*.swo
+
+# latex compilation files
+*.bbl
+*.blg
+*.aux
+*.out
