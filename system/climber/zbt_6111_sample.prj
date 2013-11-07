@@ -1,0 +1,6 @@
+verilog work "../sources/zbt_6111.v"
+verilog work "../sources/video_decoder.v"
+verilog work "../sources/ntsc2zbt.v"
+verilog work "../sources/display_16hex.v"
+verilog work "../sources/debounce.v"
+verilog work "../sources/zbt_6111_sample.v"
