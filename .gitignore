@@ -7,3 +7,6 @@
 *.blg
 *.aux
 *.out
+
+# trash
+.DS_Store

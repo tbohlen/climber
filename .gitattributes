@@ -1,0 +1,5 @@
+# default line ending behavior
+* text=auto
+
+# native behavior for all .v files
+*.v text
