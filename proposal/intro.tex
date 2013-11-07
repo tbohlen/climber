@@ -1,20 +1,19 @@
 \section{Introduction}
 \label{sec:intro}
 
-Rational analyses of human cognition seek to explain and quantify human behavior
-and thought processes under the assumption that they are an optimal adaptation
-to the constraints of the environment. Anderson \cite{anderson1991} argues that
-categorization is a basic function of human cognitive processes, and that
-Bayesian statistical inference is a theoretically motivated and effective model
-for human categorization. Sanborn, Griffiths, and Navarro \cite{sanborn2010}
-further investigate Bayesian algorithms for category learning, finding a
-single-particle particle filter to be most effective, and most similar to human behavior.
+This project aims to create a rock climbing video game in which the player can
+climb a virtual wall by making motions in the real world. The player will be
+able to reach up, down, left, and right in reality in order to find and grasp
+the virtual handholds. A force feedback system will provide tactile information
+about the location of holds, and a computer display will provide visual cues. If
+the player lets go, they will fall back to the beginning. The game is over when
+the player reaches the top of the virtual wall.
 
-To extend upon the previous work concerning particle filters and category
-learning, this experiment analyzes each individual move made by a human while
-sorting data, rather than simply analyzing the end result. A single end sort can
-be achieved by a number of paths exponential in the size of the largest
-category. Analyzing the process step by step allows access to this vast amount
-of missed information, assuming it can be analyzed in some useful way. In this
-way, move-by-move analysis is an exponentially tougher test for human inference
-models. 
+Hand tracking will be achieved using two colored gloves, one for each hand, and
+a video camera.  Force feedback will be provided by one or more small vibrating
+motors. Finally, a button placed on the glove will register when the player has
+grabbed a virtual hold.
+
+Stretch goals include creating a three dimensional environment, a map editor, and adding head
+tracking in order to create a virtual headlamp that allows the user to only see
+a small number of holds at a time.

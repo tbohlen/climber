@@ -1,20 +1,4 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-This experiment was designed to extend the previous work concerning particle
-filters and category learning by Anderson, Sanborn, Griffeths, and Navarro by
-comparing not just the results of Baysian machine categorization with human
-categorization, but each move made during the categorization process. Such an
-analysis has the potential to offer much stronger evidence for or against human
-categorization models
-
-68 subjects participated in the 40-image categorization test, and the particle
-filter inference algorithm used agreed with the human choices $49.032\%$ of the
-time. Chance would have resulted in a $20.286\%$ agreement rate.
-
-Although not conclusive, the results do support the existing evidence that
-Baysian models, and, in particular, particle filters are good potential models
-for human categorization. Potentially more importantly, this study functioned as
-a proof-of-concept for such move-by-move analysis and the future use of such
-analyses, in experiments like those suggested in Section \ref{sec:discussion} or
-in very different work, seems a good investment of research time and effort.
+This project will be a 2D virtual reality rock climbing game. The player will wear two gloves, each with grab buttons and a haptic feedback system, to be tracked by a camera. The position of the players hands will be overlaid onscreen, allowing the player to climb a virtual wall. The game will be broken into two main blocks, in addition to the glove block, which simply controls feedback and the grab button. The first block is the tracking module. It will take in video information from a camera, store it in memory, then find the center of mass of both hands for every frame. It will then send this to a position module, which will be used to smooth out the hand position movement before sending it to the gameplay module. The gameplay module will take the hand position, to create and send video information to the VGA output in the labkit. It will do this with four submodules. The handhold submodule will keep track of the handholds on the map, the grab submodule will see if a player is grabbing a handhold, the movement submodule will control the position of the camera, and the pixel information submodule will output video information. Finally, a glove block will control the haptic feedback system, as well send information from the grab button to the gameplay module. When all three major modules are interfaced, the game will be ready to play. 
