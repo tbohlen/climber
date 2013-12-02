@@ -21,7 +21,7 @@
 // Make sure that the adv7185 is set to run in 16-bit LLC2 mode.
 
 module ntsc_decode(clk, reset, tv_in_ycrcb, ycrcb, f, v, h, data_valid);
-   
+
    // clk - line-locked clock (in this case, LLC1 which runs at 27Mhz)
    // reset - system reset
    // tv_in_ycrcb - 10-bit input from chip. should map to pins [19:10]
@@ -29,38 +29,38 @@ module ntsc_decode(clk, reset, tv_in_ycrcb, ycrcb, f, v, h, data_valid);
    // f - field: 1 indicates an even field, 0 an odd field
    // v - vertical sync: 1 means vertical sync
    // h - horizontal sync: 1 means horizontal sync
-   
+
    input clk;
    input reset;
    input [9:0] tv_in_ycrcb; // modified for 10 bit input - should be P[19:10]
    output [29:0] ycrcb;
-   output 	f;
-   output 	v;
-   output 	h;
-   output 	data_valid;
+   output f;
+   output v;
+   output h;
+   output data_valid;
    // output [4:0] state;
 
-   parameter 	SYNC_1 = 0;
-   parameter 	SYNC_2 = 1;
-   parameter 	SYNC_3 = 2;
-   parameter 	SAV_f1_cb0 = 3;
-   parameter 	SAV_f1_y0 = 4;
-   parameter 	SAV_f1_cr1 = 5;
-   parameter 	SAV_f1_y1 = 6;
-   parameter 	EAV_f1 = 7;
-   parameter 	SAV_VBI_f1 = 8;
-   parameter 	EAV_VBI_f1 = 9;
-   parameter 	SAV_f2_cb0 = 10;
-   parameter 	SAV_f2_y0 = 11;
-   parameter 	SAV_f2_cr1 = 12;
-   parameter 	SAV_f2_y1 = 13;
-   parameter 	EAV_f2 = 14;
-   parameter 	SAV_VBI_f2 = 15;
-   parameter 	EAV_VBI_f2 = 16;
+   parameter	SYNC_1 = 0;
+   parameter	SYNC_2 = 1;
+   parameter	SYNC_3 = 2;
+   parameter	SAV_f1_cb0 = 3;
+   parameter	SAV_f1_y0 = 4;
+   parameter	SAV_f1_cr1 = 5;
+   parameter	SAV_f1_y1 = 6;
+   parameter	EAV_f1 = 7;
+   parameter	SAV_VBI_f1 = 8;
+   parameter	EAV_VBI_f1 = 9;
+   parameter	SAV_f2_cb0 = 10;
+   parameter	SAV_f2_y0 = 11;
+   parameter	SAV_f2_cr1 = 12;
+   parameter	SAV_f2_y1 = 13;
+   parameter	EAV_f2 = 14;
+   parameter	SAV_VBI_f2 = 15;
+   parameter	EAV_VBI_f2 = 16;
 
-   
-   
-   
+
+
+
    // In the start state, the module doesn't know where
    // in the sequence of pixels, it is looking.
 
@@ -77,9 +77,9 @@ module ntsc_decode(clk, reset, tv_in_ycrcb, ycrcb, f, v, h, data_valid);
    reg [9:0] 	y = 10'h000;  // luminance
    reg [9:0] 	cr = 10'h000; // chrominance
    reg [9:0] 	cb = 10'h000; // more chrominance
-   
+
    assign 	state = current_state;
-   
+
    always @ (posedge clk)
      begin
 	if (reset)
@@ -134,9 +134,9 @@ module ntsc_decode(clk, reset, tv_in_ycrcb, ycrcb, f, v, h, data_valid);
 
    // if y is coming in, enable the register
    // likewise for cr and cb
-   assign y_enable = (current_state == SAV_f1_y0) || 
+   assign y_enable = (current_state == SAV_f1_y0) ||
 	             (current_state == SAV_f1_y1) ||
-	             (current_state == SAV_f2_y0) || 
+	             (current_state == SAV_f2_y0) ||
 	             (current_state == SAV_f2_y1);
    assign cr_enable = (current_state == SAV_f1_cr1) ||
 	              (current_state == SAV_f2_cr1);
@@ -151,7 +151,7 @@ module ntsc_decode(clk, reset, tv_in_ycrcb, ycrcb, f, v, h, data_valid);
    assign ycrcb = {y,cr,cb};
 
    reg 	  f = 0;
-   
+
    always @ (posedge clk)
      begin
 	y <= y_enable ? tv_in_ycrcb : y;
@@ -159,7 +159,7 @@ module ntsc_decode(clk, reset, tv_in_ycrcb, ycrcb, f, v, h, data_valid);
 	cb <= cb_enable ? tv_in_ycrcb : cb;
 	f <= (current_state == SYNC_3) ? tv_in_ycrcb[8] : f;
      end
-   
+
 endmodule
 
 
@@ -453,11 +453,11 @@ endmodule
 `define COLOR_KILL                              1'b1
   // 0: Disable color kill
   // 1: Enable color kill
-  
+
 `define ADV7185_REGISTER_33 {1'b1, `COLOR_KILL, 1'b1, `MAXIMUM_IRE, `AVERAGE_BIRIGHTNESS_LINES, `PEAK_WHITE_UPDATE}
 
 `define ADV7185_REGISTER_10 8'h00
-`define ADV7185_REGISTER_11 8'h00  
+`define ADV7185_REGISTER_11 8'h00
 `define ADV7185_REGISTER_12 8'h00
 `define ADV7185_REGISTER_13 8'h45
 `define ADV7185_REGISTER_14 8'h18
@@ -493,7 +493,7 @@ endmodule
 `define ADV7185_REGISTER_32 8'h00
 `define ADV7185_REGISTER_34 8'h0F
 `define ADV7185_REGISTER_35 8'h01
-`define ADV7185_REGISTER_36 8'h00      
+`define ADV7185_REGISTER_36 8'h00
 `define ADV7185_REGISTER_37 8'h00
 `define ADV7185_REGISTER_38 8'h00
 `define ADV7185_REGISTER_39 8'h00
@@ -507,7 +507,7 @@ endmodule
 `define ADV7185_REGISTER_F2 8'h80
 
 
-module adv7185init (reset, clock_27mhz, source, tv_in_reset_b, 
+module adv7185init (reset, clock_27mhz, source, tv_in_reset_b,
 		    tv_in_i2c_clock, tv_in_i2c_data);
 
    input reset;
@@ -516,7 +516,7 @@ module adv7185init (reset, clock_27mhz, source, tv_in_reset_b,
    output tv_in_i2c_clock; // I2C clock output to ADV7185
    output tv_in_i2c_data; // I2C data line to ADV7185
    input source; // 0: composite, 1: s-video
-   
+
    initial begin
       $display("ADV7185 Initialization values:");
       $display("  Register 0:  0x%X", `ADV7185_REGISTER_0);
@@ -540,11 +540,11 @@ module adv7185init (reset, clock_27mhz, source, tv_in_reset_b,
    //
    // Generate a 1MHz for the I2C driver (resulting I2C clock rate is 250kHz)
    //
-   
+
    reg [7:0] clk_div_count, reset_count;
    reg clock_slow;
    wire reset_slow;
-   
+
    initial
      begin
 	clk_div_count <= 8'h00;
@@ -552,7 +552,7 @@ module adv7185init (reset, clock_27mhz, source, tv_in_reset_b,
 	clock_slow <= 1'b0;
 	// synthesis attribute init of clock_slow is "0";
      end
-   
+
    always @(posedge clock_27mhz)
      if (clk_div_count == 26)
        begin
@@ -569,27 +569,27 @@ module adv7185init (reset, clock_27mhz, source, tv_in_reset_b,
        reset_count <= (reset_count==0) ? 0 : reset_count-1;
 
    assign reset_slow = reset_count != 0;
-   
+
    //
    // I2C driver
    //
-   
+
    reg load;
    reg [7:0] data;
    wire ack, idle;
-   
+
    i2c i2c(.reset(reset_slow), .clock4x(clock_slow), .data(data), .load(load),
 	   .ack(ack), .idle(idle), .scl(tv_in_i2c_clock),
 	   .sda(tv_in_i2c_data));
-   
+
    //
    // State machine
    //
-   
+
    reg [7:0] state;
    reg tv_in_reset_b;
    reg old_source;
-   
+
    always @(posedge clock_slow)
       if (reset_slow)
 	begin
@@ -775,7 +775,7 @@ module adv7185init (reset, clock_27mhz, source, tv_in_reset_b,
 	       if (idle)
 		 state <= state+1;
 	    end
-	  
+
 	  8'h1A: begin
 	     data <= 8'h8A;
 	     load <= 1'b1;
@@ -841,7 +841,7 @@ module adv7185init (reset, clock_27mhz, source, tv_in_reset_b,
 	     if (idle) state <= 8'h20;
 	  end
        endcase
-   
+
 endmodule
 
 // i2c module for use with the ADV7185
@@ -861,11 +861,11 @@ module i2c (reset, clock4x, data, load, idle, ack, scl, sda);
    reg ack, idle;
    reg scl;
    reg sdai;
-   
+
    reg [7:0] state;
 
    assign sda = sdai ? 1'bZ : 1'b0;
-   
+
    always @(posedge clock4x)
      if (reset)
        begin
@@ -1095,5 +1095,3 @@ module i2c (reset, clock4x, data, load, idle, ack, scl, sda);
        endcase
 
 endmodule
-
-	

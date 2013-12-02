@@ -53,8 +53,8 @@ module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, ntsc
     input vclk;	// video clock from camera
     input [2:0] fvh;
     input dataValid;
-    input [7:0] dataIn;
-    output [18:0] ntsc_addr;
+    input [18:0] dataIn;
+    output [19:0] ntsc_addr;
     output [35:0] ntsc_data;
     output ntsc_we;	// write enable for NTSC data
     input switch;		// switch which determines mode (for debugging)
@@ -67,7 +67,7 @@ module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, ntsc
 
     reg [9:0] col = 0;
     reg [9:0] row = 0;
-    reg [7:0] vdata = 0;
+    reg [17:0] vdata = 0;
     reg vwe; // write enable signal that also checks dataValid
     reg oldDataValid;
     reg old_frame;	// frames are even / odd interlaced
@@ -97,7 +97,7 @@ module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, ntsc
     // registers
 
     reg [9:0] x[1:0],y[1:0]; // synced row and col
-    reg [7:0] data[1:0]; // synced vdata
+    reg [17:0] data[1:0]; // synced vdata
     reg we[1:0]; // synced vwe
     reg eo[1:0]; // synced even_odd
 
@@ -121,11 +121,11 @@ module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, ntsc
 
     // shift each set of four bytes into a large register for the ZBT
 
-   reg [31:0] mydata;
+   reg [35:0] mydata;
    always @(posedge clk) begin
        // shift data if new, writable data has come through
        if (we_edge) begin
-           mydata <= { mydata[23:0], data[1] };
+           mydata <= { mydata[17:0], data[1] };
        end
    end
 
@@ -151,37 +151,36 @@ module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, ntsc
    //          To fix, delay col & row by 4 clock cycles.
    //          Delay other signals as well.
 
-   reg [39:0] x_delay;
-   reg [39:0] y_delay;
-   reg [3:0] we_delay;
-   reg [3:0] eo_delay;
+   reg [19:0] x_delay;
+   reg [19:0] y_delay;
+   reg [1:0] we_delay;
+   reg [1:0] eo_delay;
 
    always @ (posedge clk) begin
        // delay all signals by shifting them through regs
-       x_delay <= {x_delay[29:0], x[1]};
-       y_delay <= {y_delay[29:0], y[1]};
-       we_delay <= {we_delay[2:0], we[1]};
-       eo_delay <= {eo_delay[2:0], eo[1]};
+       x_delay <= {x_delay[9:0], x[1]};
+       y_delay <= {y_delay[9:0], y[1]};
+       we_delay <= {we_delay[0], we[1]};
+       eo_delay <= {eo_delay[0], eo[1]};
    end
 
    // compute address to store data in
-   wire [8:0] y_addr = y_delay[38:30];
-   wire [9:0] x_addr = x_delay[39:30];
+   wire [8:0] y_addr = y_delay[18:30];
+   wire [9:0] x_addr = x_delay[19:30];
 
-   wire [18:0] myaddr = {1'b0, y_addr[8:0], eo_delay[3], x_addr[9:2]};
+   wire [19:0] myaddr = {1'b0, y_addr[8:0], eo_delay[3], x_addr[9:1]};
 
    // Now address (0,0,0) contains pixel data(0,0) etc.
 
-
    // alternate (256x192) image data and address
    wire [31:0] mydata2 = {data[1],data[1],data[1],data[1]};
-   wire [18:0] myaddr2 = {1'b0, y_addr[8:0], eo_delay[3], x_addr[7:0]};
+   wire [19:0] myaddr2 = {1'b0, y_addr[8:0], eo_delay[3], x_addr[8:0]};
 
    // update the output address and data only when four bytes ready
 
-   reg [18:0] ntsc_addr;
+   reg [19:0] ntsc_addr;
    reg [35:0] ntsc_data;
-   wire ntsc_we = switch ? we_edge : (we_edge & (x_delay[31:30]==2'b00));
+   wire ntsc_we = switch ? we_edge : (we_edge & (x_delay[10]==1'b0));
 
    always @(posedge clk) begin
        if ( ntsc_we ) begin
