@@ -47,7 +47,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // Prepare data and address values to fill ZBT memory with NTSC data
 
-module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, ntsc_we, switch);
+module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, ntsc_we, switch, frameNumber);
 
     input clk;	// system clock
     input vclk;	// video clock from camera
@@ -58,6 +58,7 @@ module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, ntsc
     output [35:0] ntsc_data;
     output ntsc_we;	// write enable for NTSC data
     input switch;		// switch which determines mode (for debugging)
+    output frameNumber; // indicates which frame we are reading. This will help inform which of two buffers to write to when storing pixel information in memory
 
     parameter COL_START = 10'd30;
     parameter ROW_START = 10'd30;
@@ -73,15 +74,19 @@ module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, ntsc
     reg old_frame;	// frames are even / odd interlaced
     reg even_odd;	// decode interlaced frame to this wire
 
-    wire frame = fvh[2];
-    wire frame_edge = frame & ~old_frame;
+    wire frame = fvh[2]; // 1 if even field, 0 if odd field
+    wire frame_edge = frame & ~old_frame; // high when frame/field goes from 0 to 1
+    wire frameNumber;
 
     always @ (posedge vclk) //LLC1 is reference
     begin
         oldDataValid <= dataValid;
         vwe <= dataValid && !fvh[2] & ~oldDataValid; // if dataValid just flipped up and the field signal is 0, write data
         old_frame <= frame;
-        even_odd = frame_edge ? ~even_odd : even_odd;
+        even_odd = frame_edge ? ~even_odd : even_odd; // switches on frame_edge
+
+        frameNumber = frame_edge & even_odd ? ~frameNumber : frameNumber; // switches when the frame switches and even_odd is 1. This effectively switches every other field, or every frame
+
 
         if (!fvh[2])
         begin
@@ -103,7 +108,7 @@ module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, ntsc
 
     always @(posedge clk)
     begin
-        {x[1],x[0]} <= {x[0],col};
+       {x[1],x[0]} <= {x[0],col};
         {y[1],y[0]} <= {y[0],row};
         {data[1],data[0]} <= {data[0],vdata};
         {we[1],we[0]} <= {we[0],vwe};
@@ -165,16 +170,16 @@ module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, ntsc
    end
 
    // compute address to store data in
-   wire [8:0] y_addr = y_delay[18:30];
-   wire [9:0] x_addr = x_delay[19:30];
+   wire [8:0] y_addr = y_delay[18:10];
+   wire [9:0] x_addr = x_delay[19:10];
 
-   wire [19:0] myaddr = {1'b0, y_addr[8:0], eo_delay[3], x_addr[9:1]};
+   wire [19:0] myaddr = {1'b0, y_addr[8:0], eo_delay[1], x_addr[9:1]};
 
    // Now address (0,0,0) contains pixel data(0,0) etc.
 
    // alternate (256x192) image data and address
    wire [31:0] mydata2 = {data[1],data[1],data[1],data[1]};
-   wire [19:0] myaddr2 = {1'b0, y_addr[8:0], eo_delay[3], x_addr[8:0]};
+   wire [19:0] myaddr2 = {1'b0, y_addr[8:0], eo_delay[1], x_addr[8:0]};
 
    // update the output address and data only when four bytes ready
 
