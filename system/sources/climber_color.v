@@ -691,39 +691,46 @@ endmodule */
 // -. Fix addressing protocol in ntsc_to_zbt module.
 // -. Forecast hcount & vcount 8 clock cycles ahead and use that
 //    instead to call data from ZBT.
+//
+// MODIFICATION (Turner) -
+// Now that we are doing this in color we need only forcast values 6 in advance.
 
 
 module vram_display(reset,clk,hcount,vcount,vr_pixel,
 		    vram_addr,vram_read_data);
 
-   input reset, clk;
-   input [10:0] hcount;
-   input [9:0] vcount;
-   output [17:0] vr_pixel;
-   output [19:0] vram_addr;
-   input [35:0]  vram_read_data;
+    input reset, clk;
+    input [10:0] hcount;
+    input [9:0] vcount;
+    output [17:0] vr_pixel;
+    output [19:0] vram_addr;
+    input [35:0]  vram_read_data;
 
-   //forecast hcount & vcount 8 clock cycles ahead to get data from ZBT
-   // hcount goes to 1344
-   // vcount goes to 806
-   wire [10:0] hcount_f = (hcount >= 1048) ? (hcount - 1048) : (hcount + 8);
-   wire [9:0] vcount_f = (hcount >= 1048) ? ((vcount == 805) ? 0 : vcount + 1) : vcount;
+    //forecast hcount & vcount 6 clock cycles ahead to get data from ZBT
+    // hcount goes to 1344
+    // vcount goes to 806
+    wire [10:0] hcount_f = (hcount >= 1048) ? (hcount - 1048) : (hcount + 6);
+    wire [9:0] vcount_f = (hcount >= 1048) ? ((vcount == 805) ? 0 : vcount + 1) : vcount;
 
-   wire [19:0] vram_addr = {1'b0, vcount_f, hcount_f[9:1]};
+    wire [19:0] vram_addr = {1'b0, vcount_f, hcount_f[9:1]};
 
-   wire [1:0] hc2 = hcount[0];
-   reg [17:0] vr_pixel;
-   reg [35:0] vr_data_latched;
-   reg [35:0] last_vr_data;
+    wire hc2 = hcount[0];
+    reg [17:0] vr_pixel;
+    reg [35:0] vr_data_latched;
+    reg [35:0] last_vr_data, next_vr_data;
 
-   always @(posedge clk)
-     last_vr_data <= (hc2==2'd1) ? vram_read_data : last_vr_data;
+    always @(posedge clk)
+        // right before data will be needed, load it into last_vr_data
+        last_vr_data = (hc2==1'b1) ? next_vr_data : last_vr_data;
+        // 3 cycles after it was first requested, 2 cycles after it was last
+        // requested, and 3 cycles before it will be needed, save the new data
+        next_vr_data = (hc2==1'b1) ? vram_read_data : next_vr_data;
 
-   always @(*)		// each 36-bit word from RAM is decoded to 4 bytes
-     case (hc4)
-       2'd1: vr_pixel = last_vr_data[17:0];
-       2'd0: vr_pixel = last_vr_data[35:18];
-     endcase
+    always @(*)		// each 36-bit word from RAM is decoded to 2 segments
+        case (hc2)
+            2'd1: vr_pixel = last_vr_data[17:0];
+            2'd0: vr_pixel = last_vr_data[35:18];
+        endcase
 
 endmodule // vram_display
 

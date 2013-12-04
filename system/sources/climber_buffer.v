@@ -20,6 +20,7 @@
 //
 // switch[7] selects between display of NTSC video and test bars
 // switch[6] is used for testing the NTSC decoder
+// switch[5] selects between displaying something and not doing so
 // switch[1] selects between test bar periods; these are stored to ZBT
 //           during blanking periods
 // switch[0] selects vertical test bars (hardwired; not stored in ZBT)
@@ -557,9 +558,9 @@ module zbt_6111_sample(beep, audio_reset_b,
 
    // VGA Output.  In order to meet the setup and hold times of the
    // AD7125, we send it ~clk.
-   assign vga_out_red = pixel[17:12];
-   assign vga_out_green = pixel[11:6];
-   assign vga_out_blue = pixel[5:0];
+   assign vga_out_red = (~switch[5]) ? pixel[17:12] : 8'd0;
+   assign vga_out_green = (~switch[5]) ? pixel[11:6] : 8'd0;
+   assign vga_out_blue = (~switch[5]) ? pixel[5:0] : 8'd0;
    assign vga_out_sync_b = 1'b1;    // not used
    assign vga_out_pixel_clock = ~clk;
    assign vga_out_blank_b = ~b;
@@ -583,12 +584,12 @@ module xvga(vclock,hcount,vcount,hsync,vsync,blank);
    input vclock;
    output [10:0] hcount;
    output [9:0] vcount;
-   output 	vsync;
-   output 	hsync;
-   output 	blank;
+   output vsync;
+   output hsync;
+   output blank;
 
-   reg 	  hsync,vsync,hblank,vblank,blank;
-   reg [10:0] 	 hcount;    // pixel number on current line
+   reg hsync,vsync,hblank,vblank,blank;
+   reg [10:0] hcount;    // pixel number on current line
    reg [9:0] vcount;	 // line number
 
    // horizontal: 1344 pixels total
@@ -624,55 +625,6 @@ module xvga(vclock,hcount,vcount,hsync,vsync,blank);
    end
 endmodule
 
-/*
-///////////////////////////////////////////////////////////////////////////////
-// xvga: Generate XVGA display signals (800 x 600 @ 60Hz)
-
-module xvga(vclock,hcount,vcount,hsync,vsync,blank);
-   input vclock;
-   output [10:0] hcount;
-   output [9:0] vcount;
-   output 	vsync;
-   output 	hsync;
-   output 	blank;
-
-   reg 	  hsync,vsync,hblank,vblank,blank;
-   reg [10:0] 	 hcount;    // pixel number on current line
-   reg [9:0] vcount;	 // line number
-
-   // horizontal: 1056 pixels total
-   // display 800 pixels per line
-   wire      hsyncon,hsyncoff,hreset,hblankon;
-   assign    hblankon = (hcount == 799);
-   assign    hsyncon = (hcount == 839);
-   assign    hsyncoff = (hcount == 967);
-   assign    hreset = (hcount == 1055);
-
-   // vertical: 628 lines total
-   // display 600 lines
-   wire      vsyncon,vsyncoff,vreset,vblankon;
-   assign    vblankon = hreset & (vcount == 599);
-   assign    vsyncon = hreset & (vcount == 600);
-   assign    vsyncoff = hreset & (vcount == 604);
-   assign    vreset = hreset & (vcount == 627);
-
-   // sync and blanking
-   wire      next_hblank,next_vblank;
-   assign next_hblank = hreset ? 0 : hblankon ? 1 : hblank;
-   assign next_vblank = vreset ? 0 : vblankon ? 1 : vblank;
-   always @(posedge vclock) begin
-      hcount <= hreset ? 0 : hcount + 1;
-      hblank <= next_hblank;
-      hsync <= hsyncon ? 0 : hsyncoff ? 1 : hsync;  // active low
-
-      vcount <= hreset ? (vreset ? 0 : vcount + 1) : vcount;
-      vblank <= next_vblank;
-      vsync <= vsyncon ? 0 : vsyncoff ? 1 : vsync;  // active low
-
-      blank <= next_vblank | (next_hblank & ~hreset);
-   end
-endmodule */
-
 /////////////////////////////////////////////////////////////////////////////
 // generate display pixels from reading the ZBT ram
 // note that the ZBT ram has 2 cycles of read (and write) latency
@@ -707,39 +659,46 @@ endmodule */
 // -. Fix addressing protocol in ntsc_to_zbt module.
 // -. Forecast hcount & vcount 8 clock cycles ahead and use that
 //    instead to call data from ZBT.
+//
+// MODIFICATION (Turner) -
+// Now that we are doing this in color we need only forcast values 6 in advance.
 
 
 module vram_display(reset,clk,hcount,vcount,vr_pixel,
 		    vram_addr,vram_read_data);
 
-   input reset, clk;
-   input [10:0] hcount;
-   input [9:0] vcount;
-   output [17:0] vr_pixel;
-   output [19:0] vram_addr;
-   input [35:0]  vram_read_data;
+    input reset, clk;
+    input [10:0] hcount;
+    input [9:0] vcount;
+    output [17:0] vr_pixel;
+    output [19:0] vram_addr;
+    input [35:0]  vram_read_data;
 
-   //forecast hcount & vcount 8 clock cycles ahead to get data from ZBT
-   // hcount goes to 1344
-   // vcount goes to 806
-   wire [10:0] hcount_f = (hcount >= 1048) ? (hcount - 1048) : (hcount + 8);
-   wire [9:0] vcount_f = (hcount >= 1048) ? ((vcount == 805) ? 0 : vcount + 1) : vcount;
+    //forecast hcount & vcount 6 clock cycles ahead to get data from ZBT
+    // hcount goes to 1344
+    // vcount goes to 806
+    wire [10:0] hcount_f = (hcount >= 1048) ? (hcount - 1048) : (hcount + 6);
+    wire [9:0] vcount_f = (hcount >= 1048) ? ((vcount == 805) ? 0 : vcount + 1) : vcount;
 
-   wire [19:0] vram_addr = {1'b0, vcount_f, hcount_f[9:1]};
+    wire [19:0] vram_addr = {1'b0, vcount_f, hcount_f[9:1]};
 
-   wire [1:0] hc2 = hcount[0];
-   reg [17:0] vr_pixel;
-   reg [35:0] vr_data_latched;
-   reg [35:0] last_vr_data;
+    wire hc2 = hcount[0];
+    reg [17:0] vr_pixel;
+    reg [35:0] vr_data_latched;
+    reg [35:0] last_vr_data, next_vr_data;
 
-   always @(posedge clk)
-     last_vr_data <= (hc2==2'd1) ? vram_read_data : last_vr_data;
+    always @(posedge clk)
+        // right before data will be needed, load it into last_vr_data
+        last_vr_data = (hc2==1'b1) ? next_vr_data : last_vr_data;
+        // 3 cycles after it was first requested, 2 cycles after it was last
+        // requested, and 3 cycles before it will be needed, save the new data
+        next_vr_data = (hc2==1'b1) ? vram_read_data : next_vr_data;
 
-   always @(*)		// each 36-bit word from RAM is decoded to 4 bytes
-     case (hc4)
-       2'd1: vr_pixel = last_vr_data[17:0];
-       2'd0: vr_pixel = last_vr_data[35:18];
-     endcase
+    always @(*)		// each 36-bit word from RAM is decoded to 2 segments
+        case (hc2)
+            2'd1: vr_pixel = last_vr_data[17:0];
+            2'd0: vr_pixel = last_vr_data[35:18];
+        endcase
 
 endmodule // vram_display
 
