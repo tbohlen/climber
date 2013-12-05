@@ -1,0 +1,94 @@
+# //  ModelSim SE 6.4a Aug 28 2008 Linux 3.2.0-54-generic
+# //
+# //  Copyright 1991-2008 Mentor Graphics Corporation
+# //              All Rights Reserved.
+# //
+# //  THIS WORK CONTAINS TRADE SECRET AND 
+# //  PROPRIETARY INFORMATION WHICH IS THE PROPERTY
+# //  OF MENTOR GRAPHICS CORPORATION OR ITS LICENSORS
+# //  AND IS SUBJECT TO LICENSE TERMS.
+# //
+# do {vram_display_tb.fdo} 
+# ** Warning: (vlib-34) Library already exists at "work".
+# Model Technology ModelSim SE vlog 6.4a Compiler 2008.08 Aug 28 2008
+# -- Compiling module zbt_6111
+# 
+# Top level modules:
+# 	zbt_6111
+# Model Technology ModelSim SE vlog 6.4a Compiler 2008.08 Aug 28 2008
+# -- Compiling module ycrcb2rgb
+# 
+# Top level modules:
+# 	ycrcb2rgb
+# Model Technology ModelSim SE vlog 6.4a Compiler 2008.08 Aug 28 2008
+# -- Compiling module ntsc_decode
+# -- Compiling module adv7185init
+# -- Compiling module i2c
+# 
+# Top level modules:
+# 	ntsc_decode
+# 	adv7185init
+# Model Technology ModelSim SE vlog 6.4a Compiler 2008.08 Aug 28 2008
+# -- Compiling module ntsc_to_zbt
+# 
+# Top level modules:
+# 	ntsc_to_zbt
+# Model Technology ModelSim SE vlog 6.4a Compiler 2008.08 Aug 28 2008
+# -- Compiling module display_16hex
+# 
+# Top level modules:
+# 	display_16hex
+# Model Technology ModelSim SE vlog 6.4a Compiler 2008.08 Aug 28 2008
+# -- Compiling module debounce
+# 
+# Top level modules:
+# 	debounce
+# Model Technology ModelSim SE vlog 6.4a Compiler 2008.08 Aug 28 2008
+# -- Compiling module climber_color
+# -- Compiling module xvga
+# -- Compiling module vram_display
+# -- Compiling module ramclock
+# 
+# Top level modules:
+# 	climber_color
+# Model Technology ModelSim SE vlog 6.4a Compiler 2008.08 Aug 28 2008
+# -- Compiling module vram_display_tb
+# 
+# Top level modules:
+# 	vram_display_tb
+# Model Technology ModelSim SE vlog 6.4a Compiler 2008.08 Aug 28 2008
+# -- Compiling module glbl
+# 
+# Top level modules:
+# 	glbl
+# vsim -L xilinxcorelib_ver -L unisims_ver -L unimacro_ver -lib work -t 1ps vram_display_tb glbl 
+# ** Note: (vsim-3813) Design is being optimized due to module recompilation...
+# Loading work.vram_display_tb(fast)
+# Loading work.vram_display(fast)
+# ** Warning: (vsim-3009) [TSCALE] - Module 'vram_display' does not have a `timescale directive in effect, but previous modules do.
+#         Region: /vram_display_tb/uut
+# Loading work.glbl(fast)
+# .main_pane.mdi.interior.cs.vm.paneset.cli_0.wf.clip.cs.pw.wf
+# .main_pane.workspace.interior.cs.nb.canvas.notebook.cs.page2.cs
+# .main_pane.signals.interior.cs
+restart -f
+# Loading work.vram_display_tb(fast)
+# Loading work.vram_display(fast)
+# ** Warning: (vsim-3009) [TSCALE] - Module 'vram_display' does not have a `timescale directive in effect, but previous modules do.
+#         Region: /vram_display_tb/uut
+# Loading work.glbl(fast)
+run 2000ns
+restart -f
+# Loading work.vram_display_tb(fast)
+# Loading work.vram_display(fast)
+# ** Warning: (vsim-3009) [TSCALE] - Module 'vram_display' does not have a `timescale directive in effect, but previous modules do.
+#         Region: /vram_display_tb/uut
+# Loading work.glbl(fast)
+run 500ns
+restart -f
+# Loading work.vram_display_tb(fast)
+# Loading work.vram_display(fast)
+# ** Warning: (vsim-3009) [TSCALE] - Module 'vram_display' does not have a `timescale directive in effect, but previous modules do.
+#         Region: /vram_display_tb/uut
+# Loading work.glbl(fast)
+run 500ns
