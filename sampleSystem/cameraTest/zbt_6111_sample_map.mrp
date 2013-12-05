@@ -1,0 +1,467 @@
+Release 10.1.03 Map K.39 (lin64)
+Xilinx Mapping Report File for Design 'zbt_6111_sample'
+
+Design Information
+------------------
+Command Line   : map -ise
+/afs/athena.mit.edu/user/other/t_bohlen/projects/climber/sampleSystem/cameraTest
+/cameraTest.ise -intstyle ise -p xc2v6000-bf957-4 -cm area -pr off -k 4 -c 100
+-tx off -o zbt_6111_sample_map.ncd zbt_6111_sample.ngd zbt_6111_sample.pcf 
+Target Device  : xc2v6000
+Target Package : bf957
+Target Speed   : -4
+Mapper Version : virtex2 -- $Revision: 1.46.12.2 $
+Mapped Date    : Thu Dec  5 13:45:36 2013
+
+Design Summary
+--------------
+Number of errors:      0
+Number of warnings:    3
+Logic Utilization:
+  Number of Slice Flip Flops:           649 out of  67,584    1%
+  Number of 4 input LUTs:               716 out of  67,584    1%
+Logic Distribution:
+  Number of occupied Slices:            568 out of  33,792    1%
+    Number of Slices containing only related logic:     568 out of     568 100%
+    Number of Slices containing unrelated logic:          0 out of     568   0%
+      *See NOTES below for an explanation of the effects of unrelated logic.
+  Total Number of 4 input LUTs:         783 out of  67,584    1%
+    Number used as logic:               684
+    Number used as a route-thru:         67
+    Number used as Shift registers:      32
+  Number of bonded IOBs:                296 out of     684   43%
+    IOB Flip Flops:                       6
+  Number of BUFGMUXs:                     5 out of      16   31%
+  Number of DCMs:                         3 out of      12   25%
+
+Peak Memory Usage:  485 MB
+Total REAL time to MAP completion:  4 secs 
+Total CPU time to MAP completion:   3 secs 
+
+NOTES:
+
+   Related logic is defined as being logic that shares connectivity - e.g. two
+   LUTs are "related" if they share common inputs.  When assembling slices,
+   Map gives priority to combine logic that is related.  Doing so results in
+   the best timing performance.
+
+   Unrelated logic shares no connectivity.  Map will only begin packing
+   unrelated logic into a slice once 99% of the slices are occupied through
+   related logic packing.
+
+   Note that once logic distribution reaches the 99% level through related
+   logic packing, this does not mean the device is completely utilized.
+   Unrelated logic packing will then begin, continuing until all usable LUTs
+   and FFs are occupied.  Depending on your timing budget, increased levels of
+   unrelated logic packing may adversely affect the overall timing performance
+   of your design.
+
+Table of Contents
+-----------------
+Section 1 - Errors
+Section 2 - Warnings
+Section 3 - Informational
+Section 4 - Removed Logic Summary
+Section 5 - Removed Logic
+Section 6 - IOB Properties
+Section 7 - RPMs
+Section 8 - Guide Report
+Section 9 - Area Group and Partition Summary
+Section 10 - Modular Design Summary
+Section 11 - Timing Report
+Section 12 - Configuration String Information
+Section 13 - Control Set Information
+Section 14 - Utilization by Hierarchy
+
+Section 1 - Errors
+------------------
+
+Section 2 - Warnings
+--------------------
+WARNING:LIT:243 - Logical network user3<28> has no load.
+WARNING:LIT:395 - The above warning message base_net_load_rule is repeated 280
+   more times for the following (max. 5 shown):
+   user3<4>,
+   user3<29>,
+   user3<5>,
+   user3<6>,
+   user3<7>
+   To see the details of these warning messages, please use the -detail switch.
+WARNING:LIT:162 - Only DFS outputs (CLKFX/FX180/CONCUR) of DCM symbol "vclk1"
+   are routed, but CLKFB is not routed. Proper phase relationship of output
+   clocks to CLKIN cannot be guaranteed.
+
+Section 3 - Informational
+-------------------------
+INFO:MapLib:562 - No environment variables are currently set.
+INFO:LIT:244 - All of the single ended outputs in this design are using slew
+   rate limited output drivers. The delay on speed critical single ended outputs
+   can be dramatically reduced by designating them as fast outputs.
+INFO:PhysDesignRules:772 - To achieve optimal frequency synthesis performance
+   with the CLKFX and CLKFX180 outputs of the DCM comp vclk1, consult the device
+   Interactive Data Sheet.
+
+Section 4 - Removed Logic Summary
+---------------------------------
+  34 block(s) optimized away
+
+Section 5 - Removed Logic
+-------------------------
+
+Optimized Block(s):
+TYPE 		BLOCK
+GND 		XST_GND
+VCC 		XST_VCC
+
+To enable printing of redundant blocks removed and signals merged, set the
+detailed map report option and rerun map.
+
+Section 6 - IOB Properties
+--------------------------
+
++-------------------------------------------------------------------------------------------------------------------------------------------------+
+| IOB Name                           | Type             | Direction | IO Standard          | Drive    | Slew | Reg (s)      | Resistor | IOB      |
+|                                    |                  |           |                      | Strength | Rate |              |          | Delay    |
++-------------------------------------------------------------------------------------------------------------------------------------------------+
+| Q                                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW | OUTDDR       |          |          |
+| ac97_sdata_out                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ac97_synch                         | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_clock                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_data<0>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_data<1>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_data<2>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_data<3>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_data<4>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_data<5>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_data<6>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_data<7>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_data<8>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_data<9>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_data<10>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_data<11>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_data<12>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_data<13>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_data<14>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer1_data<15>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_clock                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_data<0>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_data<1>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_data<2>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_data<3>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_data<4>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_data<5>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_data<6>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_data<7>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_data<8>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_data<9>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_data<10>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_data<11>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_data<12>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_data<13>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_data<14>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer2_data<15>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_clock                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_data<0>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_data<1>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_data<2>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_data<3>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_data<4>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_data<5>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_data<6>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_data<7>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_data<8>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_data<9>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_data<10>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_data<11>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_data<12>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_data<13>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_data<14>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer3_data<15>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_clock                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_data<0>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_data<1>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_data<2>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_data<3>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_data<4>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_data<5>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_data<6>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_data<7>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_data<8>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_data<9>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_data<10>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_data<11>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_data<12>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_data<13>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_data<14>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| analyzer4_data<15>                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| audio_reset_b                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| beep                               | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| button_enter                       | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| clock_27mhz                        | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| clock_feedback_in                  | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| clock_feedback_out                 | IOB              | OUTPUT    | LVTTL                | 12       | SLOW | OUTDDR       |          |          |
+| disp_blank                         | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| disp_ce_b                          | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| disp_clock                         | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| disp_data_out                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| disp_reset_b                       | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| disp_rs                            | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<0>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<1>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<2>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<3>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<4>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<5>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<6>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<7>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<8>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<9>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<10>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<11>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<12>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<13>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<14>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<15>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<16>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<17>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<18>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<19>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<20>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<21>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<22>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_address<23>                  | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_byte_b                       | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_ce_b                         | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_oe_b                         | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_reset_b                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| flash_we_b                         | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| led<0>                             | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| led<1>                             | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| led<2>                             | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| led<3>                             | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| led<4>                             | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| led<5>                             | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| led<6>                             | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| led<7>                             | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<0>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<1>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<2>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<3>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<4>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<5>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<6>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<7>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<8>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<9>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<10>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<11>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<12>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<13>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<14>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<15>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<16>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<17>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_address<18>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_adv_ld                        | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_bwe_b<0>                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_bwe_b<1>                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_bwe_b<2>                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_bwe_b<3>                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_ce_b                          | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_cen_b                         | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_clk                           | IOB              | OUTPUT    | LVTTL                | 12       | SLOW | OUTDDR       |          |          |
+| ram0_data<0>                       | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<1>                       | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<2>                       | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<3>                       | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<4>                       | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<5>                       | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<6>                       | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<7>                       | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<8>                       | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<9>                       | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<10>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<11>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<12>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<13>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<14>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<15>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<16>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<17>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<18>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<19>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<20>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<21>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<22>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<23>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<24>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<25>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<26>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<27>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<28>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<29>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<30>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<31>                      | IOB              | BIDIR     | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<32>                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<33>                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<34>                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_data<35>                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_oe_b                          | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram0_we_b                          | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<0>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<1>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<2>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<3>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<4>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<5>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<6>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<7>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<8>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<9>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<10>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<11>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<12>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<13>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<14>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<15>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<16>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<17>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_address<18>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_adv_ld                        | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_bwe_b<0>                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_bwe_b<1>                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_bwe_b<2>                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_bwe_b<3>                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_ce_b                          | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_cen_b                         | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_clk                           | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_oe_b                          | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| ram1_we_b                          | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| rs232_rts                          | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| rs232_txd                          | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| switch<0>                          | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| switch<1>                          | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| switch<6>                          | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| switch<7>                          | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| systemace_address<0>               | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| systemace_address<1>               | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| systemace_address<2>               | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| systemace_address<3>               | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| systemace_address<4>               | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| systemace_address<5>               | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| systemace_address<6>               | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| systemace_ce_b                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| systemace_oe_b                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| systemace_we_b                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_in_clock                        | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_in_fifo_clock                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_in_fifo_read                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_in_i2c_clock                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_in_i2c_data                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_in_iso                          | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_in_line_clock1                  | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| tv_in_reset_b                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_in_ycrcb<10>                    | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| tv_in_ycrcb<11>                    | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| tv_in_ycrcb<12>                    | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| tv_in_ycrcb<13>                    | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| tv_in_ycrcb<14>                    | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| tv_in_ycrcb<15>                    | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| tv_in_ycrcb<16>                    | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| tv_in_ycrcb<17>                    | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| tv_in_ycrcb<18>                    | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| tv_in_ycrcb<19>                    | IOB              | INPUT     | LVTTL                |          |      |              |          |          |
+| tv_out_blank_b                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_clock                       | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_hsync_b                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_i2c_clock                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_i2c_data                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_pal_ntsc                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_reset_b                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_subcar_reset                | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_vsync_b                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_ycrcb<0>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_ycrcb<1>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_ycrcb<2>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_ycrcb<3>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_ycrcb<4>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_ycrcb<5>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_ycrcb<6>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_ycrcb<7>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_ycrcb<8>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| tv_out_ycrcb<9>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_blank_b                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_blue<0>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_blue<1>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_blue<2>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_blue<3>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_blue<4>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_blue<5>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_blue<6>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_blue<7>                    | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_green<0>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_green<1>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_green<2>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_green<3>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_green<4>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_green<5>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_green<6>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_green<7>                   | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_hsync                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_pixel_clock                | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_red<0>                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_red<1>                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_red<2>                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_red<3>                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_red<4>                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_red<5>                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_red<6>                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_red<7>                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_sync_b                     | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
+| vga_out_vsync                      | IOB              | OUTPUT    | LVTTL                | 12       | SLOW |              |          |          |
++-------------------------------------------------------------------------------------------------------------------------------------------------+
+
+Section 7 - RPMs
+----------------
+
+Section 8 - Guide Report
+------------------------
+Guide not run on this design.
+
+Section 9 - Area Group and Partition Summary
+--------------------------------------------
+
+Partition Implementation Status
+-------------------------------
+
+  No Partitions were found in this design.
+
+-------------------------------
+
+Area Group Information
+----------------------
+
+  No area groups were found in this design.
+
+----------------------
+
+Section 10 - Modular Design Summary
+-----------------------------------
+Modular Design not used for this design.
+
+Section 11 - Timing Report
+--------------------------
+This design was not run using timing mode.
+
+Section 12 - Configuration String Details
+-----------------------------------------
+Use the "-detail" map option to print out Configuration Strings
+
+Section 13 - Control Set Information
+------------------------------------
+No control set information for this architecture.
+
+Section 14 - Utilization by Hierarchy
+-------------------------------------
+
+This feature is not supported for this architecture.
