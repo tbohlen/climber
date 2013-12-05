@@ -118,7 +118,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-module zbt_6111_sample(beep, audio_reset_b,
+module climber_color(beep, audio_reset_b,
 		       ac97_sdata_out, ac97_sdata_in, ac97_synch,
 	       ac97_bit_clock,
 
@@ -247,7 +247,7 @@ module zbt_6111_sample(beep, audio_reset_b,
    ////////////////////////////////////////////////////////////////////////////
 
    // Audio Input and Output
-   assign beep= 1'b0;
+   assign beep = 1'b0;
    assign audio_reset_b = 1'b0;
    assign ac97_synch = 1'b0;
    assign ac97_sdata_out = 1'b0;
@@ -457,7 +457,7 @@ module zbt_6111_sample(beep, audio_reset_b,
 
    wire [35:0] vram_write_data;
    wire [35:0] vram_read_data;
-   wire [19:0] vram_addr;
+   wire [18:0] vram_addr;
    wire        vram_we;
 
    wire ram0_clk_not_used;
@@ -467,11 +467,30 @@ module zbt_6111_sample(beep, audio_reset_b,
 		   ram0_we_b, ram0_address, ram0_data, ram0_cen_b);
 
    // generate pixel value from reading ZBT memory
-   wire [7:0] vr_pixel;
-   wire [19:0] vram_addr1;
+   wire [17:0] vr_pixel;
+   wire [18:0] vramReadAddr;
 
    vram_display vd1(reset,clk,hcount,vcount,vr_pixel,
-		    vram_addr1,vram_read_data);
+		    vramReadAddr,vram_read_data, switch[3]);
+
+    // center of mass calculation
+    wire [9:0] xCenterRed, xCenterGreen, yCenterRed, yCenterGreen;
+
+    centerOfMass redCOM(.clk(clk), .reset(reset), .pixel(vr_pixel),
+                 .x(hcount), .y(vcount), .colorSelect(2'd0), .xCenter(xCenterRed),
+                 .yCenter(yCenterRed));
+
+    centerOfMass greenCOM(.clk(clk), .reset(reset), .pixel(vr_pixel),
+                 .x(hcount), .y(vcount), .colorSelect(2'd1), .xCenter(xCenterGreen),
+                 .yCenter(yCenterGreen));
+
+    // draw lines to note the center of mass (for debugging, enable with switch
+    // 4)
+    wire [23:0] greenVertPixel, redVertPixel, greenHorizPixel, redHorizPixel;
+    blob #(.WIDTH(4), .HEIGHT(480), .COLOR(24'h00_FF_00)) greenVert(.x(xCenterGreen), .y(0), .hcount(hcount), .vcount(vcount), .pixel(greenVertPixel));
+    blob #(.WIDTH(720), .HEIGHT(4), .COLOR(24'h00_FF_00)) greenHorix(.x(0), .y(yCenterGreen), .hcount(hcount), .vcount(vcount), .pixel(greenHorizPixel));
+    blob #(.WIDTH(4), .HEIGHT(480), .COLOR(24'hFF_00_00)) redVert(.x(xCenterRen), .y(0), .hcount(hcount), .vcount(vcount), .pixel(redVertPixel));
+    blob #(.WIDTH(720), .HEIGHT(4), .COLOR(24'hFF_00_00)) redHoriz(.x(0), .y(yCenterRed), .hcount(hcount), .vcount(vcount), .pixel(redHorizPixel));
 
    // ADV7185 NTSC decoder interface code
    // adv7185 initialization module
@@ -492,38 +511,42 @@ module zbt_6111_sample(beep, audio_reset_b,
     // change to 24-bit RGB
     // this operation runs on the LLC, not the system clock
     wire [23:0] rgb;
-    ycrcb2rgb ycrcbToRGB(.R(rgb[23:16]), .G(rgb[15:8]), .B(rgb[8:0]),
+    ycrcb2rgb ycrcbToRGB(.R(rgb[23:16]), .G(rgb[15:8]), .B(rgb[7:0]),
         .clk(tv_in_line_clock1), .Y(ycrcb[29:20]), .Cr(ycrcb[19:10]),
-        .Cb(ycrcb[9:0]));
+        .Cb(ycrcb));
 
     // take only the 6 most significant bits from each value (R, G, and B) in
     // order to cut down on storage
     wire [17:0] rgbDataIn = {rgb[23:18], rgb[15:10], rgb[7:2]};
 
    // code to write NTSC data to video memory
-   wire [19:0] ntsc_addr;
+   // stores the data in 36-bit chunks and figures out where they should go in
+   // memory
+   wire [18:0] ntsc_addr;
    wire [35:0] ntsc_data;
-   wire        ntsc_we;
+
+   // output a bunch of other things to make sure it works
    ntsc_to_zbt n2z (.clk(clk), .vclk(tv_in_line_clock1), .fvh(fvh),
        .dataValid(dv), .dataIn(rgbDataIn), .ntsc_addr(ntsc_addr),
-       .ntsc_data(ntsc_data), .ntsc_we(ntsc_we), .switch(switch[6]));
+       .ntsc_data(ntsc_data), .switch(switch[6]));
 
    // code to write pattern to ZBT memory
    reg [31:0]	count;
-   always @(posedge clk) count <= reset ? 0 : count + 1;
+   always @(posedge clk) begin
+       count <= reset ? 0 : count + 1;
+   end
 
-   wire [19:0]	vram_addr2 = count[0+18:0];
-   wire [35:0]	vpat = ( switch[1] ? {4{count[3+3:3],4'b0}}
-			 : {4{count[3+4:4],4'b0}} ); // creates two different vertical bar patterns
+   wire [18:0]	vram_addr2 = count[19:1];
+   wire [35:0]	vpat = switch[0] ? 36'd0 : {2{count[8:3], 6'b00_00_00, count[8:3]}};
 
    // mux selecting read/write to memory based on which write-enable is chosen
 
-   wire	        sw_ntsc = ~switch[7]; // if 1 then saves video data
-   wire	        my_we = sw_ntsc ? (hcount[1:0]==2'd2) : blank;
-   wire [19:0]	write_addr = sw_ntsc ? ntsc_addr : vram_addr2;
+   wire	        sw_ntsc = switch[7]; // if 1 then saves video data
+   wire	        my_we = sw_ntsc ? (hcount[0]==1'd1) : blank;
+   wire [18:0]	write_addr = sw_ntsc ? ntsc_addr : vram_addr2;
    wire [35:0]	write_data = sw_ntsc ? ntsc_data : vpat;
 
-   assign	vram_addr = my_we ? write_addr : vram_addr1;
+   assign	vram_addr = my_we ? write_addr : vramReadAddr;
    assign	vram_we = my_we;
    assign	vram_write_data = write_data;
 
@@ -533,17 +556,22 @@ module zbt_6111_sample(beep, audio_reset_b,
    reg b,hs,vs;
 
    always @(posedge clk) begin
-       pixel <= switch[0] ? {3{hcount[8:6],3'b0}} : vr_pixel;
+       pixel <= vr_pixel;
        b <= blank; // blank from xvga display
        hs <= hsync; // hsync from xvga display
        vs <= vsync; // vsync from xvga display
    end
 
+   // figure out what com pixel to display, if any
+    wire [23:0] greenComPixel = greenVertPixel | greenHorizPixel;
+    wire [23:0] redComPixel = redVertPixel | redHorizPixel;
+    wire [23:0] comPixel = (greenComPixel && switch[4]) ? greenComPixel : ((redComPixel && switch[4]) ? redComPixel : 18'd0);
+
    // VGA Output.  In order to meet the setup and hold times of the
    // AD7125, we send it ~clk.
-   assign vga_out_red = pixel[17:12];
-   assign vga_out_green = pixel[11:6];
-   assign vga_out_blue = pixel[5:0];
+   assign vga_out_red = comPixel ? comPixel[23:16] : {pixel[17:12], 2'd0};
+   assign vga_out_green = comPixel ? comPixel[15:8] : {pixel[11:6], 2'd0};
+   assign vga_out_blue = comPixel ? comPixel[7:0] : {pixel[5:0], 2'd0};
    assign vga_out_sync_b = 1'b1;    // not used
    assign vga_out_pixel_clock = ~clk;
    assign vga_out_blank_b = ~b;
@@ -552,11 +580,12 @@ module zbt_6111_sample(beep, audio_reset_b,
 
    // debugging
 
-   assign led = ~{vram_addr[18:13],reset,switch[0]};
+   assign led = ~{my_we, vpat[35:29]};
 
-   always @(posedge clk)
-     // dispdata <= {vram_read_data,9'b0,vram_addr};
-     dispdata <= {ntsc_data,9'b0,ntsc_addr};
+   always @(posedge clk) begin
+       // dispdata <= {vram_read_data,9'b0,vram_addr};
+       dispdata <= {fvh, 1'b0, 12'hA, 2'd0, pixel, 12'hA, 1'b0, ntsc_addr[18:1]};
+   end
 
 endmodule
 
@@ -608,55 +637,6 @@ module xvga(vclock,hcount,vcount,hsync,vsync,blank);
    end
 endmodule
 
-/*
-///////////////////////////////////////////////////////////////////////////////
-// xvga: Generate XVGA display signals (800 x 600 @ 60Hz)
-
-module xvga(vclock,hcount,vcount,hsync,vsync,blank);
-   input vclock;
-   output [10:0] hcount;
-   output [9:0] vcount;
-   output 	vsync;
-   output 	hsync;
-   output 	blank;
-
-   reg 	  hsync,vsync,hblank,vblank,blank;
-   reg [10:0] 	 hcount;    // pixel number on current line
-   reg [9:0] vcount;	 // line number
-
-   // horizontal: 1056 pixels total
-   // display 800 pixels per line
-   wire      hsyncon,hsyncoff,hreset,hblankon;
-   assign    hblankon = (hcount == 799);
-   assign    hsyncon = (hcount == 839);
-   assign    hsyncoff = (hcount == 967);
-   assign    hreset = (hcount == 1055);
-
-   // vertical: 628 lines total
-   // display 600 lines
-   wire      vsyncon,vsyncoff,vreset,vblankon;
-   assign    vblankon = hreset & (vcount == 599);
-   assign    vsyncon = hreset & (vcount == 600);
-   assign    vsyncoff = hreset & (vcount == 604);
-   assign    vreset = hreset & (vcount == 627);
-
-   // sync and blanking
-   wire      next_hblank,next_vblank;
-   assign next_hblank = hreset ? 0 : hblankon ? 1 : hblank;
-   assign next_vblank = vreset ? 0 : vblankon ? 1 : vblank;
-   always @(posedge vclock) begin
-      hcount <= hreset ? 0 : hcount + 1;
-      hblank <= next_hblank;
-      hsync <= hsyncon ? 0 : hsyncoff ? 1 : hsync;  // active low
-
-      vcount <= hreset ? (vreset ? 0 : vcount + 1) : vcount;
-      vblank <= next_vblank;
-      vsync <= vsyncon ? 0 : vsyncoff ? 1 : vsync;  // active low
-
-      blank <= next_vblank | (next_hblank & ~hreset);
-   end
-endmodule */
-
 /////////////////////////////////////////////////////////////////////////////
 // generate display pixels from reading the ZBT ram
 // note that the ZBT ram has 2 cycles of read (and write) latency
@@ -693,44 +673,46 @@ endmodule */
 //    instead to call data from ZBT.
 //
 // MODIFICATION (Turner) -
-// Now that we are doing this in color we need only forcast values 6 in advance.
+// Now that we are doing this in color we need only forcast values 4 in advance.
 
 
 module vram_display(reset,clk,hcount,vcount,vr_pixel,
-		    vram_addr,vram_read_data);
+		    vram_addr,vram_read_data, switch);
 
     input reset, clk;
     input [10:0] hcount;
     input [9:0] vcount;
     output [17:0] vr_pixel;
-    output [19:0] vram_addr;
+    output [18:0] vram_addr;
     input [35:0]  vram_read_data;
+    input switch;
 
-    //forecast hcount & vcount 6 clock cycles ahead to get data from ZBT
+    // forecast hcount & vcount 4 clock cycles ahead to get data from ZBT
     // hcount goes to 1344
     // vcount goes to 806
-    wire [10:0] hcount_f = (hcount >= 1048) ? (hcount - 1048) : (hcount + 6);
-    wire [9:0] vcount_f = (hcount >= 1048) ? ((vcount == 805) ? 0 : vcount + 1) : vcount;
+    wire [10:0] hcount_f = (hcount >= 1044) ? (hcount - 1044) : (hcount + 4);
+    wire [9:0] vcount_f = (hcount >= 1044) ? ((vcount == 805) ? 0 : vcount + 1) : vcount;
 
-    wire [19:0] vram_addr = {1'b0, vcount_f, hcount_f[9:1]};
+    wire [18:0] vram_addr = {vcount_f, hcount_f[9:1]};
 
     wire hc2 = hcount[0];
     reg [17:0] vr_pixel;
-    reg [35:0] vr_data_latched;
     reg [35:0] last_vr_data, next_vr_data;
 
-    always @(posedge clk)
+    always @(posedge clk) begin
         // right before data will be needed, load it into last_vr_data
-        last_vr_data = (hc2==1'b1) ? next_vr_data : last_vr_data;
+        last_vr_data = (hc2==1'b0) ? next_vr_data : last_vr_data;
         // 3 cycles after it was first requested, 2 cycles after it was last
         // requested, and 3 cycles before it will be needed, save the new data
-        next_vr_data = (hc2==1'b1) ? vram_read_data : next_vr_data;
+        next_vr_data = (hc2==1'b0) ? vram_read_data : next_vr_data;
+    end
 
-    always @(*)		// each 36-bit word from RAM is decoded to 2 segments
+    always @(*) begin		// each 36-bit word from RAM is decoded to 2 segments
         case (hc2)
-            2'd1: vr_pixel = last_vr_data[17:0];
-            2'd0: vr_pixel = last_vr_data[35:18];
+            2'd1: vr_pixel = (switch || (hcount >= 0 && hcount < 720 && vcount >= 0 && vcount < 480)) ? last_vr_data[17:0] : 18'b1111_1111_1111_1111_11;
+            2'd0: vr_pixel = (switch || (hcount >= 0 && hcount < 720 && vcount >= 0 && vcount < 480)) ? last_vr_data[35:18] : 18'b1111_1111_1111_1111_11;
         endcase
+    end
 
 endmodule // vram_display
 

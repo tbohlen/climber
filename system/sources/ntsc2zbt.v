@@ -47,21 +47,20 @@
 /////////////////////////////////////////////////////////////////////////////
 // Prepare data and address values to fill ZBT memory with NTSC data
 
-module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, ntsc_we, switch, frameNumber);
+module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, switch, frameNumber);
 
     input clk;	// system clock
     input vclk;	// video clock from camera
     input [2:0] fvh;
     input dataValid;
     input [18:0] dataIn;
-    output [19:0] ntsc_addr;
+    output [18:0] ntsc_addr;
     output [35:0] ntsc_data;
-    output ntsc_we;	// write enable for NTSC data
     input switch;		// switch which determines mode (for debugging)
-    output frameNumber; // indicates which frame we are reading. This will help inform which of two buffers to write to when storing pixel information in memory
+    output reg frameNumber; // indicates which frame we are reading. This will help inform which of two buffers to write to when storing pixel information in memory
 
-    parameter COL_START = 10'd30;
-    parameter ROW_START = 10'd30;
+    parameter COL_START = 10'd0;
+    parameter ROW_START = 10'd0;
 
     // here put the luminance data from the ntsc decoder into the ram
     // this is for 1024 * 786 XGA display
@@ -76,7 +75,6 @@ module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, ntsc
 
     wire frame = fvh[2]; // 1 if even field, 0 if odd field
     wire frame_edge = frame & ~old_frame; // high when frame/field goes from 0 to 1
-    wire frameNumber;
 
     always @ (posedge vclk) //LLC1 is reference
     begin
@@ -94,7 +92,9 @@ module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, ntsc
                 (!fvh[2] && !fvh[1] && dataValid && (col < 1024)) ? col + 1 : col;
             row <= fvh[1] ? ROW_START :
                 (!fvh[2] && fvh[0] && (row < 768)) ? row + 1 : row;
-            vdata <= (dataValid && !fvh[2]) ? dataIn : vdata;
+            // the row > 12 makes sure to ignore the sync rows at the beginning
+            // of each read
+            vdata <= (dataValid && !fvh[2] && row > 12) ? dataIn : vdata;
         end
     end
 
@@ -170,27 +170,28 @@ module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, ntsc
    end
 
    // compute address to store data in
-   wire [8:0] y_addr = y_delay[18:10];
+   // the - 12 comes from the syncing lines as mentioned above
+   wire [8:0] y_addr = y_delay[18:10] - 9'd12;
    wire [9:0] x_addr = x_delay[19:10];
 
-   wire [19:0] myaddr = {1'b0, y_addr[8:0], eo_delay[1], x_addr[9:1]};
+   wire [18:0] myaddr = {y_addr[8:0], eo_delay[1], x_addr[9:1]};
 
    // Now address (0,0,0) contains pixel data(0,0) etc.
 
    // alternate (256x192) image data and address
-   wire [31:0] mydata2 = {data[1],data[1],data[1],data[1]};
-   wire [19:0] myaddr2 = {1'b0, y_addr[8:0], eo_delay[1], x_addr[8:0]};
+   wire [31:0] mydata2 = {data[1],data[1]};
+   wire [18:0] myaddr2 = {y_addr[8:0], eo_delay[1], x_addr[8:0]};
 
-   // update the output address and data only when four bytes ready
+   // update the output address and data only when two bytes ready
 
-   reg [19:0] ntsc_addr;
+   reg [18:0] ntsc_addr;
    reg [35:0] ntsc_data;
-   wire ntsc_we = switch ? we_edge : (we_edge & (x_delay[10]==1'b0));
+   wire ntsc_we = 0 ? we_edge : (we_edge & (x_delay[10]==1'b0));
 
    always @(posedge clk) begin
        if ( ntsc_we ) begin
-           ntsc_addr <= switch ? myaddr2 : myaddr;	// normal and expanded modes
-           ntsc_data <= switch ? {4'b0,mydata2} : {4'b0,mydata};
+           ntsc_addr <= 0 ? myaddr2 : myaddr;	// normal and expanded modes
+           ntsc_data <= 0 ? mydata2 : mydata;
        end
    end
 
