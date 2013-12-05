@@ -5,7 +5,7 @@
  ** Generic Equations:
  ***************************************************************************/
 
-module YCrCb2RGB ( R, G, B, clk, rst, Y, Cr, Cb );
+module ycrcb2rgb ( R, G, B, clk, rst, Y, Cr, Cb );
 
 output [7:0]  R, G, B;
 
