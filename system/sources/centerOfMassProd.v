@@ -19,12 +19,10 @@
 //
 module centerOfMass(input clk, input reset, input [17:0] pixel,
                     input [10:0] x, input [9:0] y, input [1:0] colorSelect,
-                    output [9:0] xCenter, output [9:0] yCenter,
-                    output included, output reg [19:0] total,
-                    output reg [28:0] xTotal, output reg [28:0] yTotal, input [4:0] diff);
+                    output [9:0] xCenter, output [9:0] yCenter);
 
-    parameter MIN_MAIN_COLOR = 5'b10_01_1;
-    parameter COLOR_DIFFERENCE = 5'b00_11_1;
+    parameter MIN_MAIN_COLOR = 5'b01_11_1;
+    parameter COLOR_DIFFERENCE = 5'b00_10_0;
 
     // current x*color total
     // current y*color total
@@ -33,6 +31,8 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
     // not overflow.
     // total and xBottom and yBottom only need 26 bits (actually fewer
     // still)
+    reg [28:0] xTotal, yTotal;
+	 reg [19:0] total;
 
     // dividers for finding x and y results
     reg [28:0] xTop, yTop;
@@ -73,11 +73,9 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
     wire [4:0] otherColor1 = (colorSelect == 2'd0) ? color1 : ((colorSelect == 2'd1) ? color2 : color0);
     wire [4:0] otherColor2 = (colorSelect == 2'd0) ? color2 : ((colorSelect == 2'd1) ? color0 : color1);
 
-    assign included = mainColor > MIN_MAIN_COLOR &&
-                    (otherColor1 < mainColor) &&
-                    (mainColor - otherColor1 > diff) &&
-                    (otherColor2 < mainColor) &&
-                    (mainColor - otherColor2 > diff) &&
+    wire included = mainColor > MIN_MAIN_COLOR &&
+                    (otherColor1 + COLOR_DIFFERENCE) < mainColor &&
+                    (otherColor2 + COLOR_DIFFERENCE) < mainColor &&
                     y < 786 && x < 1024;
     always @(posedge clk) begin
         if (reset) begin
@@ -94,14 +92,14 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
                 yTop <= yTotal;
                 xBottom <= total;
                 yBottom <= total;
-                xTotal <= included ? {19'd0, x[9:0]} : 29'd0;
-                yTotal <= included ? {19'd0, y[9:0]} : 29'd0;
-                total <= {19'd0, included};
+                xTotal <= included ? x[9:0] : 0;
+                yTotal <= included ? y : 0;
+                total <= included;
             end
             else begin
-                xTotal <= included ? xTotal + {19'd0, x[9:0]} : xTotal;
-                yTotal <= included ? yTotal + {19'd0, y[9:0]} : yTotal;
-                total <= total + {19'd0, included};
+                xTotal <= included ? xTotal + x[9:0] : xTotal;
+                yTotal <= included ? yTotal + y : yTotal;
+                total <= total + included;
             end
         end
     end

@@ -22,42 +22,42 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
                     output [9:0] xTopOut, output [9:0] xBottomOut,
                     output [9:0] yTopOut, output [9:0] yBottomOut);
 
+    parameter MIN_MAIN_COLOR = 5'b01_11_1;
+    parameter COLOR_DIFFERENCE = 5'b00_10_0;
+
     // current x*color total
     // current y*color total
     // current color total
     // 32 bits so that a screen that is all the color of interest will
     // not overflow.
-    // colorTotal and xBottom and yBottom only need 26 bits (actually fewer
+    // total and xBottom and yBottom only need 26 bits (actually fewer
     // still)
-    reg [31:0] xColorTotal, yColorTotal;
-    reg [31:0] colorTotal;
+    reg [28:0] xTotal, yTotal;
+	 reg [19:0] total;
 
     // dividers for finding x and y results
-    reg [31:0] xTop, yTop;
-    reg [31:0] xBottom, yBottom;
-    wire [31:0] xQuotient, yQuotient, xRemainder, yRemainder;
+    reg [28:0] xTop, yTop;
+    reg [19:0] xBottom, yBottom;
+    wire [28:0] xQuotient, yQuotient, xRemainder, yRemainder;
     wire xRFD, yRFD;
 
     //comDivider xDiv(
-		//.clk(clk),
-		//.dividend(xTop),
-		//.divisor(xBottom),
-		//.quotient(xQuotient),
-		//.fractional(xRemainder),
-		//.rfd(xRFD)
-		//);
+        //.clk(clk),
+        //.dividend(xTop),
+        //.divisor(xBottom),
+        //.quotient(xQuotient),
+        //.fractional(xRemainder),
+        //.rfd(xRFD)
+        //);
 
     //comDivider yDiv(
-		//.clk(clock),
-		//.dividend(yTop),
-		//.divisor(yBottom),
-		//.quotient(yQuotient),
-			//// note: the "fractional" output was originally named "remainder" in this
-		//// file -- it seems coregen will name this output "fractional" even if
-		//// you didn't select the remainder type as fractional.
-		//.fractional(yRemainder),
-		//.rfd(yRFD)
-		//);
+        //.clk(clock),
+        //.dividend(yTop),
+        //.divisor(yBottom),
+        //.quotient(yQuotient),
+        //.fractional(yRemainder),
+        //.rfd(yRFD)
+        //);
 
     // connect outputs
     //assign xCenter = xQuotient[9:0];
@@ -65,34 +65,40 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
 
     // calculate masses and increment xColor, yColor, and color
     // downsample color by 1 order of magnitude
-    wire [4:0] color = (colorSelect == 2'd0) ? pixel[17:13] :
-                       ((colorSelect == 2'd1) ? pixel[11:7] : pixel[5:1]);
-    wire [14:0] xColor = color * x;
-    wire [14:0] yColor = color * y;
+    wire [4:0] color0 = pixel[17:13];
+    wire [4:0] color1 = pixel[11:7];
+    wire [4:0] color2 = pixel[5:1];
+
+    wire [4:0] mainColor = (colorSelect == 2'd0) ? color0 : ((colorSelect == 2'd1) ? color1 : color2);
+    wire [4:0] otherColor1 = (colorSelect == 2'd0) ? color1 : ((colorSelect == 2'd1) ? color2 : color0);
+    wire [4:0] otherColor2 = (colorSelect == 2'd0) ? color2 : ((colorSelect == 2'd1) ? color0 : color1);
+
+    wire included = mainColor > MIN_MAIN_COLOR &&
+                    (otherColor1 + COLOR_DIFFERENCE) < mainColor &&
+                    (otherColor2 + COLOR_DIFFERENCE) < mainColor;
     always @(posedge clk) begin
         if (reset) begin
             // reset all values
-            xColorTotal <= 0;
-            yColorTotal <= 0;
-            colorTotal <= 0;
+            xTotal <= 0;
+            yTotal <= 0;
+            total <= 0;
         end
         else begin
-
             // if this is the first pixel of the next frame calculate centers,
             // output them, and clear values
             if (x == 0 && y == 0) begin
-                xTop <= xColorTotal;
-                yTop <= yColorTotal;
-                xBottom <= colorTotal;
-                yBottom <= colorTotal;
-                xColorTotal <= xColor;
-                yColorTotal <= yColor;
-                colorTotal <= color;
+                xTop <= xTotal;
+                yTop <= yTotal;
+                xBottom <= total;
+                yBottom <= total;
+                xTotal <= included ? x : 0;
+                yTotal <= included ? y : 0;
+                total <= included;
             end
             else begin
-                xColorTotal <= xColorTotal + xColor;
-                yColorTotal <= yColorTotal + yColor;
-                colorTotal <= colorTotal + color;
+                xTotal <= included ? xTotal + x : xTotal;
+                yTotal <= included ? yTotal + y : yTotal;
+                total <= total + included;
             end
         end
     end

@@ -36,7 +36,6 @@
 // fvh - three bits giving field, vertical, and horizontal sync signals
 // dataValid - dataValid signal from ntsc_decode module
 // dataIn - the video data input
-// switch - switch to choose between two modes (for debugging) (unclear on modes)
 //
 // Outputs:
 //
@@ -47,7 +46,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // Prepare data and address values to fill ZBT memory with NTSC data
 
-module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, switch, frameNumber);
+module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, frameNumber);
 
     input clk;	// system clock
     input vclk;	// video clock from camera
@@ -56,7 +55,6 @@ module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, swit
     input [18:0] dataIn;
     output [18:0] ntsc_addr;
     output [35:0] ntsc_data;
-    input switch;		// switch which determines mode (for debugging)
     output reg frameNumber; // indicates which frame we are reading. This will help inform which of two buffers to write to when storing pixel information in memory
 
     parameter COL_START = 10'd0;
@@ -178,20 +176,16 @@ module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, swit
 
    // Now address (0,0,0) contains pixel data(0,0) etc.
 
-   // alternate (256x192) image data and address
-   wire [31:0] mydata2 = {data[1],data[1]};
-   wire [18:0] myaddr2 = {y_addr[8:0], eo_delay[1], x_addr[8:0]};
-
    // update the output address and data only when two bytes ready
 
    reg [18:0] ntsc_addr;
    reg [35:0] ntsc_data;
-   wire ntsc_we = 0 ? we_edge : (we_edge & (x_delay[10]==1'b0));
+   wire ntsc_we = (we_edge & (x_delay[10]==1'b0));
 
    always @(posedge clk) begin
        if ( ntsc_we ) begin
-           ntsc_addr <= 0 ? myaddr2 : myaddr;	// normal and expanded modes
-           ntsc_data <= 0 ? mydata2 : mydata;
+           ntsc_addr <= myaddr;
+           ntsc_data <= mydata;
        end
    end
 

@@ -18,12 +18,6 @@
 // We use a very simple ZBT interface, which does not involve any clock
 // generation or hiding of the pipelining.  See zbt_6111.v for more info.
 //
-// switch[7] selects between display of NTSC video and test bars
-// switch[6] is used for testing the NTSC decoder
-// switch[1] selects between test bar periods; these are stored to ZBT
-//           during blanking periods
-// switch[0] selects vertical test bars (hardwired; not stored in ZBT)
-//
 //
 // Bug fix: Jonathan P. Mailoa <jpmailoa@mit.edu>
 // Date   : 11-May-09
@@ -363,8 +357,8 @@ module climber_color(beep, audio_reset_b,
    // button_left, button_down, button_up, and switches are inputs
 
    // User I/Os
-   assign user1 = 32'hZ;
-   assign user2 = 32'hZ;
+   //assign user1 = 32'hZ;
+   //assign user2 = 32'hZ;
    assign user3 = 32'hZ;
    assign user4 = 32'hZ;
 
@@ -380,12 +374,12 @@ module climber_color(beep, audio_reset_b,
    // systemace_irq and systemace_mpbrdy are inputs
 
    // Logic Analyzer
-   assign analyzer1_data = 16'h0;
-   assign analyzer1_clock = 1'b1;
+   //assign analyzer1_data = 16'h0;
+   //assign analyzer1_clock = 1'b1;
    assign analyzer2_data = 16'h0;
    assign analyzer2_clock = 1'b1;
-   assign analyzer3_data = 16'h0;
-   assign analyzer3_clock = 1'b1;
+   //assign analyzer3_data = 16'h0;
+   //assign analyzer3_clock = 1'b1;
    assign analyzer4_data = 16'h0;
    assign analyzer4_clock = 1'b1;
 
@@ -471,27 +465,37 @@ module climber_color(beep, audio_reset_b,
    wire [18:0] vramReadAddr;
 
    vram_display vd1(reset,clk,hcount,vcount,vr_pixel,
-		    vramReadAddr,vram_read_data, switch[3]);
+		    vramReadAddr,vram_read_data, switch[7:5]);
 
     // center of mass calculation
     wire [9:0] xCenterRed, xCenterGreen, yCenterRed, yCenterGreen;
+	 wire comIncluded;
+	 wire [28:0] comXTotal, comYTotal;
+	 wire [19:0] comTotal;
 
-    centerOfMass redCOM(.clk(clk), .reset(reset), .pixel(vr_pixel),
-                 .x(hcount), .y(vcount), .colorSelect(2'd0), .xCenter(xCenterRed),
-                 .yCenter(yCenterRed));
+    //centerOfMass redCOM(.clk(clk), .reset(reset), .pixel(vr_pixel),
+                 //.x(hcount), .y(vcount), .colorSelect(2'd0), .xCenter(xCenterRed),
+                 //.yCenter(yCenterRed), .diff(switch[4:0]));
 
     centerOfMass greenCOM(.clk(clk), .reset(reset), .pixel(vr_pixel),
-                 .x(hcount>>2), .y(vcount), .colorSelect(2'd1), .xCenter(xCenterGreen),
-                 .yCenter(yCenterGreen));
+                 .x(hcount), .y(vcount), .colorSelect(2'd1), .xCenter(xCenterGreen),
+                 .yCenter(yCenterGreen), .included(comIncluded), .total(comTotal), .xTotal(comXTotal), .yTotal(comYTotal), .diff(switch[4:0]));
+
+    assign analyzer1_clock = clk;
+    assign analyzer3_clock = clk;
+    assign analyzer1_data = {comIncluded, comTotal[14:0]};
+    assign analyzer3_data = comYTotal[15:0];
+    assign user1 = {comIncluded, comTotal, 11'd0};
+    assign user2 = {comYTotal, 3'd0};
 
     // draw lines to note the center of mass (for debugging, enable with switch
     // 4)
     wire [23:0] greenVertPixel, redVertPixel, greenHorizPixel, redHorizPixel;
+   //blob #(.WIDTH(4), .HEIGHT(480), .COLOR(24'hFF_00_00)) redVert(.x(xCenterRen), .y(0), .hcount(hcount), .vcount(vcount), .pixel(redVertPixel));
+    //blob #(.WIDTH(720), .HEIGHT(4), .COLOR(24'hFF_00_00)) redHoriz(.x(0), .y(yCenterRed), .hcount(hcount), .vcount(vcount), .pixel(redHorizPixel));
     blob #(.WIDTH(4), .HEIGHT(480), .COLOR(24'h00_FF_00)) greenVert(.x(xCenterGreen), .y(0), .hcount(hcount), .vcount(vcount), .pixel(greenVertPixel));
     blob #(.WIDTH(720), .HEIGHT(4), .COLOR(24'h00_FF_00)) greenHorix(.x(0), .y(yCenterGreen), .hcount(hcount), .vcount(vcount), .pixel(greenHorizPixel));
-    blob #(.WIDTH(4), .HEIGHT(480), .COLOR(24'hFF_00_00)) redVert(.x(xCenterRen), .y(0), .hcount(hcount), .vcount(vcount), .pixel(redVertPixel));
-    blob #(.WIDTH(720), .HEIGHT(4), .COLOR(24'hFF_00_00)) redHoriz(.x(0), .y(yCenterRed), .hcount(hcount), .vcount(vcount), .pixel(redHorizPixel));
-
+ 
    // ADV7185 NTSC decoder interface code
    // adv7185 initialization module
    adv7185init adv7185(.reset(reset), .clock_27mhz(clock_27mhz),
@@ -528,7 +532,7 @@ module climber_color(beep, audio_reset_b,
    // output a bunch of other things to make sure it works
    ntsc_to_zbt n2z (.clk(clk), .vclk(tv_in_line_clock1), .fvh(fvh),
        .dataValid(dv), .dataIn(rgbDataIn), .ntsc_addr(ntsc_addr),
-       .ntsc_data(ntsc_data), .switch(switch[6]));
+       .ntsc_data(ntsc_data));
 
    // code to write pattern to ZBT memory
    reg [31:0]	count;
@@ -537,11 +541,11 @@ module climber_color(beep, audio_reset_b,
    end
 
    wire [18:0]	vram_addr2 = count[19:1];
-   wire [35:0]	vpat = switch[0] ? 36'd0 : {2{count[8:3], 6'b00_00_00, count[8:3]}};
+   wire [35:0]	vpat = {2{count[8:3], 6'b00_00_00, count[8:3]}};//switch[0] ? 36'd0 : {2{count[8:3], 6'b00_00_00, count[8:3]}};
 
    // mux selecting read/write to memory based on which write-enable is chosen
 
-   wire	        sw_ntsc = switch[7]; // if 1 then saves video data
+   wire	        sw_ntsc = 1; // if 1 then saves video data
    wire	        my_we = sw_ntsc ? (hcount[0]==1'd1) : blank;
    wire [18:0]	write_addr = sw_ntsc ? ntsc_addr : vram_addr2;
    wire [35:0]	write_data = sw_ntsc ? ntsc_data : vpat;
@@ -565,7 +569,7 @@ module climber_color(beep, audio_reset_b,
    // figure out what com pixel to display, if any
     wire [23:0] greenComPixel = greenVertPixel | greenHorizPixel;
     wire [23:0] redComPixel = redVertPixel | redHorizPixel;
-    wire [23:0] comPixel = (greenComPixel && switch[4]) ? greenComPixel : ((redComPixel && switch[4]) ? redComPixel : 18'd0);
+    wire [23:0] comPixel = (greenComPixel) ? greenComPixel : ((redComPixel) ? redComPixel : 18'd0);
 
    // VGA Output.  In order to meet the setup and hold times of the
    // AD7125, we send it ~clk.
@@ -583,8 +587,7 @@ module climber_color(beep, audio_reset_b,
    assign led = ~{my_we, vpat[35:29]};
 
    always @(posedge clk) begin
-       // dispdata <= {vram_read_data,9'b0,vram_addr};
-       dispdata <= {xCenterRed[7:0], yCenterRed[7:0], xCenterGreen[7:0], yCenterGreen[7:0], 12'hAA_A, 1'b0, ntsc_addr[18:0]};
+       dispdata <= {xCenterGreen[7:0], yCenterGreen[7:0], 16'hAA_AA, 1'b0, ntsc_addr[18:0]};
    end
 
 endmodule
@@ -677,7 +680,7 @@ endmodule
 
 
 module vram_display(reset,clk,hcount,vcount,vr_pixel,
-		    vram_addr,vram_read_data, switch);
+		    vram_addr,vram_read_data, switches);
 
     input reset, clk;
     input [10:0] hcount;
@@ -685,7 +688,7 @@ module vram_display(reset,clk,hcount,vcount,vr_pixel,
     output [17:0] vr_pixel;
     output [18:0] vram_addr;
     input [35:0]  vram_read_data;
-    input switch;
+    input [2:0] switches;
 
     // forecast hcount & vcount 4 clock cycles ahead to get data from ZBT
     // hcount goes to 1344
@@ -695,9 +698,11 @@ module vram_display(reset,clk,hcount,vcount,vr_pixel,
 
     wire [18:0] vram_addr = {vcount_f, hcount_f[9:1]};
 
-    wire hc2 = hcount[0];
-    reg [17:0] vr_pixel;
+	 wire hc2 = hcount[0];
     reg [35:0] last_vr_data, next_vr_data;
+	 wire [24:0] redOnGreenPixel, greenOnRedPixel, whiteOnBlackPixel;
+
+	 wire [17:0] vr_pixel, normalPixel, blobPixel, bgPixel;
 
     always @(posedge clk) begin
         // right before data will be needed, load it into last_vr_data
@@ -707,14 +712,34 @@ module vram_display(reset,clk,hcount,vcount,vr_pixel,
         next_vr_data = (hc2==1'b0) ? vram_read_data : next_vr_data;
     end
 
-    always @(*) begin		// each 36-bit word from RAM is decoded to 2 segments
-        case (hc2)
-            2'd1: vr_pixel = (~switch) ? 18'o77_77_77: ((hcount < 512) ? 18'o00_77_00: 18'o77_00_00);
-            2'd0: vr_pixel = (~switch) ? 18'o77_77_77: ((hcount < 512) ? 18'o00_77_00: 18'o77_00_00);
-            //2'd1: vr_pixel = (switch || (hcount >= 0 && hcount < 720 && vcount >= 0 && vcount < 480)) ? last_vr_data[17:0] : 18'b000000_000000_000000;
-            //2'd0: vr_pixel = (switch || (hcount >= 0 && hcount < 720 && vcount >= 0 && vcount < 480)) ? last_vr_data[35:18] : 18'b000000_000000_000000;
-        endcase
-    end
+    // create blocks for display
+    blob #(.WIDTH(64), .HEIGHT(64), .COLOR(24'hF0_00_00))
+        redOnGreen(.x(0), .y(361), .hcount(hcount), .vcount(vcount),
+            .pixel(redOnGreenPixel)); // red half way down left side, green bg
+    blob #(.WIDTH(64), .HEIGHT(64), .COLOR(24'h00_F0_00))
+        greenOnRed(.x(960), .y(0), .hcount(hcount), .vcount(vcount),
+            .pixel(greenOnRedPixel)); // green in top right, red bg
+    blob #(.WIDTH(64), .HEIGHT(64), .COLOR(24'hF0_F0_F0))
+        whiteOnBlack(.x(480), .y(722), .hcount(hcount), .vcount(vcount),
+            .pixel(whiteOnBlackPixel)); // white center bottom, black BG
+
+    // based on switches, figure out which blob to output	 
+    assign blobPixel = switches[1] ? {redOnGreenPixel[23:18], redOnGreenPixel[15:10], redOnGreenPixel[7:2]} :
+                            (switches[0] ? {greenOnRedPixel[23:18], greenOnRedPixel[15:10], greenOnRedPixel[7:2]} :
+                            {whiteOnBlackPixel[23:18], whiteOnBlackPixel[15:10], whiteOnBlackPixel[7:2]});
+    assign bgPixel = switches[1] ? 18'o00_70_00 : (switches[0] ? 18'o70_00_00 : 18'o00_00_00);
+
+    // each 36-bit word from RAM is decoded to 2 segments
+    // black is displayed if there is not another feed (eg around the camera)
+    assign normalPixel = (hcount >= 720 || vcount >= 460) ? 18'd0 : (hc2 == 2'd1 ? last_vr_data[17:0] : last_vr_data[35:0]);
+    assign vr_pixel = (switches[2]) ? normalPixel : (blobPixel ? blobPixel: bgPixel);
+
+    //always @(*) begin
+        //case (hc2)
+            //2'd1: vr_pixel = (switch || (hcount < 720 && vcount < 480)) ? last_vr_data[17:0] : 18'b000000_000000_000000;
+            //2'd0: vr_pixel = (switch || (hcount < 720 && vcount < 480)) ? last_vr_data[35:18] : 18'b000000_000000_000000;
+        //endcase
+    //end
 
 endmodule // vram_display
 
