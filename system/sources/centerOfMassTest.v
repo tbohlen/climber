@@ -19,7 +19,8 @@
 //
 module centerOfMass(input clk, input reset, input [17:0] pixel,
                     input [9:0] x, y, input [1:0] colorSelect,
-                    output [9:0] xCenter, output [9:0] yCenter);
+                    output [9:0] xTopOut, output [9:0] xBottomOut,
+                    output [9:0] yTopOut, output [9:0] yBottomOut);
 
     // current x*color total
     // current y*color total
@@ -37,27 +38,30 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
     wire [31:0] xQuotient, yQuotient, xRemainder, yRemainder;
     wire xRFD, yRFD;
 
-    comDivider xDiv(
-        .clk(clk),
-        .dividend(xTop),
-        .divisor(xBottom),
-        .quotient(xQuotient),
-        .fractional(xRemainder),
-        .rfd(xRFD)
-        );
+    //comDivider xDiv(
+		//.clk(clk),
+		//.dividend(xTop),
+		//.divisor(xBottom),
+		//.quotient(xQuotient),
+		//.fractional(xRemainder),
+		//.rfd(xRFD)
+		//);
 
-    comDivider yDiv(
-        .clk(clock),
-        .dividend(yTop),
-        .divisor(yBottom),
-        .quotient(yQuotient),
-        .fractional(yRemainder),
-        .rfd(yRFD)
-        );
+    //comDivider yDiv(
+		//.clk(clock),
+		//.dividend(yTop),
+		//.divisor(yBottom),
+		//.quotient(yQuotient),
+			//// note: the "fractional" output was originally named "remainder" in this
+		//// file -- it seems coregen will name this output "fractional" even if
+		//// you didn't select the remainder type as fractional.
+		//.fractional(yRemainder),
+		//.rfd(yRFD)
+		//);
 
     // connect outputs
-    assign xCenter = xQuotient[9:0];
-    assign yCenter = yQuotient[9:0];
+    //assign xCenter = xQuotient[9:0];
+    //assign yCenter = yQuotient[9:0];
 
     // calculate masses and increment xColor, yColor, and color
     // downsample color by 1 order of magnitude
@@ -92,4 +96,9 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
             end
         end
     end
+
+    assign xTopOut = xTop[9:0];
+    assign xBottomOut = xBottom[9:0];
+    assign yTopOut = yTop[9:0];
+    assign yBottomOut = yBottom[9:0];
 endmodule

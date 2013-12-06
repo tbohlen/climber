@@ -481,7 +481,7 @@ module climber_color(beep, audio_reset_b,
                  .yCenter(yCenterRed));
 
     centerOfMass greenCOM(.clk(clk), .reset(reset), .pixel(vr_pixel),
-                 .x(hcount), .y(vcount), .colorSelect(2'd1), .xCenter(xCenterGreen),
+                 .x(hcount>>2), .y(vcount), .colorSelect(2'd1), .xCenter(xCenterGreen),
                  .yCenter(yCenterGreen));
 
     // draw lines to note the center of mass (for debugging, enable with switch
@@ -504,9 +504,9 @@ module climber_color(beep, audio_reset_b,
    wire       dv;	// data valid
 
    ntsc_decode decode (.clk(tv_in_line_clock1), .reset(reset),
-		       .tv_in_ycrcb(tv_in_ycrcb[19:10]),
-		       .ycrcb(ycrcb), .f(fvh[2]),
-		       .v(fvh[1]), .h(fvh[0]), .data_valid(dv));
+       .tv_in_ycrcb(tv_in_ycrcb[19:10]),
+       .ycrcb(ycrcb), .f(fvh[2]),
+       .v(fvh[1]), .h(fvh[0]), .data_valid(dv));
 
     // change to 24-bit RGB
     // this operation runs on the LLC, not the system clock
@@ -584,7 +584,7 @@ module climber_color(beep, audio_reset_b,
 
    always @(posedge clk) begin
        // dispdata <= {vram_read_data,9'b0,vram_addr};
-       dispdata <= {fvh, 1'b0, 12'hA, 2'd0, pixel, 12'hA, 1'b0, ntsc_addr[18:1]};
+       dispdata <= {xCenterRed[7:0], yCenterRed[7:0], xCenterGreen[7:0], yCenterGreen[7:0], 12'hAA_A, 1'b0, ntsc_addr[18:0]};
    end
 
 endmodule
@@ -709,8 +709,10 @@ module vram_display(reset,clk,hcount,vcount,vr_pixel,
 
     always @(*) begin		// each 36-bit word from RAM is decoded to 2 segments
         case (hc2)
-            2'd1: vr_pixel = (switch || (hcount >= 0 && hcount < 720 && vcount >= 0 && vcount < 480)) ? last_vr_data[17:0] : 18'b1111_1111_1111_1111_11;
-            2'd0: vr_pixel = (switch || (hcount >= 0 && hcount < 720 && vcount >= 0 && vcount < 480)) ? last_vr_data[35:18] : 18'b1111_1111_1111_1111_11;
+            2'd1: vr_pixel = (~switch) ? 18'o77_77_77: ((hcount < 512) ? 18'o00_77_00: 18'o77_00_00);
+            2'd0: vr_pixel = (~switch) ? 18'o77_77_77: ((hcount < 512) ? 18'o00_77_00: 18'o77_00_00);
+            //2'd1: vr_pixel = (switch || (hcount >= 0 && hcount < 720 && vcount >= 0 && vcount < 480)) ? last_vr_data[17:0] : 18'b000000_000000_000000;
+            //2'd0: vr_pixel = (switch || (hcount >= 0 && hcount < 720 && vcount >= 0 && vcount < 480)) ? last_vr_data[35:18] : 18'b000000_000000_000000;
         endcase
     end
 
