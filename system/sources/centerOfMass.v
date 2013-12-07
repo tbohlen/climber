@@ -1,30 +1,34 @@
-// This module calculates the center of mass of a certain hue on the screen.
-// Parameters allowing for flexibility in the hue detected are provided in-file.
-// The first version of this is naive, and only considers a single pixel at
-// a time. Later versions aim to check areas of pixels and weight them
-// accordingly.
 //
-// Creates its own internal address based on where it is with its frames.
+// File: centerOfMass.v
+// Date: 11/30/2013
+// Author: Turner Bohlen <turnerbohlen@gmail.com>
 //
-// Will output the result from the last frame for the duration of the subsequent
-// frame.
-//
-// We are making the assumption that the divider will always be ready for data
-// when we send data. This is safe thanks to the huge delay between devisions
-// (divisions occur at only 30hz).
+// Finds the center of mass of a certain color. A color is chosed using the
+// colorSelect input.
 //
 // colorSelect = 0 : red
 // colorSelect = 1 : green
 // colorSelect = 2 : blue
 //
+// All pixels which contain the selected color above the stored or input
+// minimum value and both other colors a certain stored or input value below
+// that value are included in the calculation.
+//
+// All qualifying pixels' positions are averaged, and the result is output.
+//
+// This module also contains a parameter setting system. (TODO: move this system
+// into a separate module). 8 input switches are used to input the minimum color
+// (switches 7-4) and minimum color difference (switches 3-0). The 'set' and
+// 'reset' buttons toggle the mode. When reset is pressed any stored values are
+// discarded and the values from the switches
+//
 module centerOfMass(input clk, input reset, input [17:0] pixel,
                     input [10:0] x, input [9:0] y, input [1:0] colorSelect,
                     output [9:0] xCenter, output [9:0] yCenter,
-                    output included, output reg [19:0] total,
-                    output reg [28:0] xTotal, output reg [28:0] yTotal, input [4:0] diff);
+                    output included, input [7:0] switches, input setButton, input resetButton, output reg set);
 
-    parameter MIN_MAIN_COLOR = 5'b10_01_1;
-    parameter COLOR_DIFFERENCE = 5'b00_11_1;
+	 reg [19:0] total;
+	 reg [28:0] xTotal, yTotal;
 
     // current x*color total
     // current y*color total
@@ -50,7 +54,7 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
         );
 
     comDivider yDiv(
-        .clk(clock),
+        .clk(clk),
         .dividend(yTop),
         .divisor(yBottom),
         .quotient(yQuotient),
@@ -73,11 +77,32 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
     wire [4:0] otherColor1 = (colorSelect == 2'd0) ? color1 : ((colorSelect == 2'd1) ? color2 : color0);
     wire [4:0] otherColor2 = (colorSelect == 2'd0) ? color2 : ((colorSelect == 2'd1) ? color0 : color1);
 
-    assign included = mainColor > MIN_MAIN_COLOR &&
+    // set and reset the colors
+    reg [4:0] setColorDiff = 5'd0;
+    reg [4:0] setColorMin = 5'd0;
+    reg oldSet, oldReset;
+    wire setEdge = setButton & ~oldSet;
+    wire resetEdge = resetButton & ~oldReset;
+
+    always @(posedge clk) begin
+        oldSet <= setButton;
+        oldReset <= resetButton;
+        if (setEdge) begin
+            set <= 1;
+            setColorDiff <= {switches[3:0], 1'b1};
+            setColorMin <= {switches[7:4], 1'b1};
+        end
+        if (resetEdge) set <= 0;
+    end
+
+    wire [4:0] colorDiff = set ? setColorDiff : {switches[3:0], 1'b1};
+    wire [4:0] colorMin = set ? setColorMin : {switches[7:4], 1'b1};
+
+    assign included = mainColor > colorMin &&
                     (otherColor1 < mainColor) &&
-                    (mainColor - otherColor1 > diff) &&
+                    (mainColor - otherColor1 > colorDiff) &&
                     (otherColor2 < mainColor) &&
-                    (mainColor - otherColor2 > diff) &&
+                    (mainColor - otherColor2 > colorDiff) &&
                     y < 786 && x < 1024;
     always @(posedge clk) begin
         if (reset) begin

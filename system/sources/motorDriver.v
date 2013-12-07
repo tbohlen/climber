@@ -9,3 +9,4 @@
 
 module motorDriver(input motorState, output drive);
     assign drive = motorState;
+endmodule

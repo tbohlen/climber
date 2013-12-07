@@ -357,9 +357,9 @@ module climber_color(beep, audio_reset_b,
    // button_left, button_down, button_up, and switches are inputs
 
    // User I/Os
-   //assign user1 = 32'hZ;
-   //assign user2 = 32'hZ;
-   assign user3 = 32'hZ;
+   assign user1 = 32'hZ;
+   assign user2 = 32'hZ;
+   //assign user3 = 32'hZ;
    assign user4 = 32'hZ;
 
    // Daughtercard Connectors
@@ -374,12 +374,12 @@ module climber_color(beep, audio_reset_b,
    // systemace_irq and systemace_mpbrdy are inputs
 
    // Logic Analyzer
-   //assign analyzer1_data = 16'h0;
-   //assign analyzer1_clock = 1'b1;
+   assign analyzer1_data = 16'h0;
+   assign analyzer1_clock = 1'b1;
    assign analyzer2_data = 16'h0;
    assign analyzer2_clock = 1'b1;
-   //assign analyzer3_data = 16'h0;
-   //assign analyzer3_clock = 1'b1;
+   assign analyzer3_data = 16'h0;
+   assign analyzer3_clock = 1'b1;
    assign analyzer4_data = 16'h0;
    assign analyzer4_clock = 1'b1;
 
@@ -431,7 +431,7 @@ module climber_color(beep, audio_reset_b,
 
    // ENTER button is user reset
    wire reset,user_reset;
-   debounce db1(power_on_reset, clk, ~button_enter, user_reset);
+   debounce dbEnter(power_on_reset, clk, ~button_enter, user_reset);
    assign reset = user_reset | power_on_reset;
 
    // display module for debugging
@@ -467,34 +467,56 @@ module climber_color(beep, audio_reset_b,
    vram_display vd1(reset,clk,hcount,vcount,vr_pixel,
 		    vramReadAddr,vram_read_data, switch[7:5]);
 
-    // center of mass calculation
-    wire [9:0] xCenterRed, xCenterGreen, yCenterRed, yCenterGreen;
-	 wire comIncluded;
-	 wire [28:0] comXTotal, comYTotal;
-	 wire [19:0] comTotal;
+    // motor output
+    wire button3Clean, button2Clean, button1Clean, button0Clean;
+    debounce db3(.reset(reset), .clk(clk), .noisy(~button3), .clean(button3Clean));
+    debounce db2(.reset(reset), .clk(clk), .noisy(~button2), .clean(button2Clean));
+    debounce db1(.reset(reset), .clk(clk), .noisy(~button1), .clean(button1Clean));
+    debounce db0(.reset(reset), .clk(clk), .noisy(~button0), .clean(button0Clean));
+    //motorDriver motorLeft(.motorState(button3Clean), .drive(user3[0]));
+    //motorDriver motorRight(.motorState(button2Clean), .drive(user3[1]));
 
-    //centerOfMass redCOM(.clk(clk), .reset(reset), .pixel(vr_pixel),
-                 //.x(hcount), .y(vcount), .colorSelect(2'd0), .xCenter(xCenterRed),
-                 //.yCenter(yCenterRed), .diff(switch[4:0]));
+    // use a button to switch between displaying red, green, and both
+    //find edge of button input
+    wire switchColors = button0Clean;
+    reg oldSwitchColors = 0;
+    wire switchColorsEdge = switchColors & ~oldSwitchColors;
+    reg [1:0] colorSetting = 2'b0; // 0 = green, 1 = red, 2 = both, 3 = none
+    always @(posedge clk) begin
+        oldSwitchColors <= switchColors;
+        // on edge switch setting
+        if (switchColorsEdge) colorSetting <= colorSetting + 1;
+    end
+
+    // set buttons
+    wire redSetButton = button1Clean && colorSetting == 2'd1;
+    wire greenSetButton = button1Clean && colorSetting == 2'd0;
+    wire redResetButton = button2Clean && colorSetting == 2'd1;
+    wire greenResetButton = button2Clean && colorSetting == 2'd0;
+
+    // center of mass calculation
+    wire [9:0] xCenterRed, xCenterGreen, yCenterRed, yCenterGreen, xSmoothGreen, xSmoothRed, ySmoothGreen, ySmoothRed;
+	 wire redIncluded, greenIncluded;
+
+    centerOfMass redCOM(.clk(clk), .reset(reset), .pixel(vr_pixel),
+                 .x(hcount), .y(vcount), .colorSelect(2'd0), .xCenter(xCenterRed),
+                 .yCenter(yCenterRed), .included(redIncluded), .switches(switch[7:0]), .setButton(redSetButton), .resetButton(redResetButton));
 
     centerOfMass greenCOM(.clk(clk), .reset(reset), .pixel(vr_pixel),
                  .x(hcount), .y(vcount), .colorSelect(2'd1), .xCenter(xCenterGreen),
-                 .yCenter(yCenterGreen), .included(comIncluded), .total(comTotal), .xTotal(comXTotal), .yTotal(comYTotal), .diff(switch[4:0]));
+                 .yCenter(yCenterGreen), .included(greenIncludedd), .switches(switch[7:0]), .setButton(greenSetButton), .resetButton(greenResetButton));
 
-    assign analyzer1_clock = clk;
-    assign analyzer3_clock = clk;
-    assign analyzer1_data = {comIncluded, comTotal[14:0]};
-    assign analyzer3_data = comYTotal[15:0];
-    assign user1 = {comIncluded, comTotal, 11'd0};
-    assign user2 = {comYTotal, 3'd0};
+    smoother greenSmooth(.clk(clk), .reset(reset), .x(xCenterGreen), .y(yCenterGreen), .smoothedX(xSmoothGreen), .smoothedY(ySmoothGreen));
+    smoother redSmooth(.clk(clk), .reset(reset), .x(xCenterRed), .y(yCenterRed), .smoothedX(xSmoothRed), .smoothedY(ySmoothRed));
+
 
     // draw lines to note the center of mass (for debugging, enable with switch
     // 4)
     wire [23:0] greenVertPixel, redVertPixel, greenHorizPixel, redHorizPixel;
-   //blob #(.WIDTH(4), .HEIGHT(480), .COLOR(24'hFF_00_00)) redVert(.x(xCenterRen), .y(0), .hcount(hcount), .vcount(vcount), .pixel(redVertPixel));
-    //blob #(.WIDTH(720), .HEIGHT(4), .COLOR(24'hFF_00_00)) redHoriz(.x(0), .y(yCenterRed), .hcount(hcount), .vcount(vcount), .pixel(redHorizPixel));
-    blob #(.WIDTH(4), .HEIGHT(480), .COLOR(24'h00_FF_00)) greenVert(.x(xCenterGreen), .y(0), .hcount(hcount), .vcount(vcount), .pixel(greenVertPixel));
-    blob #(.WIDTH(720), .HEIGHT(4), .COLOR(24'h00_FF_00)) greenHorix(.x(0), .y(yCenterGreen), .hcount(hcount), .vcount(vcount), .pixel(greenHorizPixel));
+   blob #(.WIDTH(4), .HEIGHT(480), .COLOR(24'hFF_30_30)) redVert(.x(xSmoothRed), .y(0), .hcount(hcount), .vcount(vcount), .pixel(redVertPixel));
+    blob #(.WIDTH(720), .HEIGHT(4), .COLOR(24'hFF_30_30)) redHoriz(.x(0), .y(ySmoothRed), .hcount(hcount), .vcount(vcount), .pixel(redHorizPixel));
+    blob #(.WIDTH(4), .HEIGHT(480), .COLOR(24'h30_FF_30)) greenVert(.x(xSmoothGreen), .y(0), .hcount(hcount), .vcount(vcount), .pixel(greenVertPixel));
+    blob #(.WIDTH(720), .HEIGHT(4), .COLOR(24'h30_FF_30)) greenHorix(.x(0), .y(ySmoothGreen), .hcount(hcount), .vcount(vcount), .pixel(greenHorizPixel));
  
    // ADV7185 NTSC decoder interface code
    // adv7185 initialization module
@@ -529,7 +551,6 @@ module climber_color(beep, audio_reset_b,
    wire [18:0] ntsc_addr;
    wire [35:0] ntsc_data;
 
-   // output a bunch of other things to make sure it works
    ntsc_to_zbt n2z (.clk(clk), .vclk(tv_in_line_clock1), .fvh(fvh),
        .dataValid(dv), .dataIn(rgbDataIn), .ntsc_addr(ntsc_addr),
        .ntsc_data(ntsc_data));
@@ -560,7 +581,10 @@ module climber_color(beep, audio_reset_b,
    reg b,hs,vs;
 
    always @(posedge clk) begin
-       pixel <= vr_pixel;
+       // show which pixels are being picked up by the center of mass
+       // calculators
+       pixel <= (greenIncluded && (colorSetting == 2'd0 || colorSetting == 2'd2)) ? 18'o000_777_000 :
+                ((redIncluded && (colorSetting == 2'd1 || colorSetting == 2'd2)) ? 18'o777_000_000 : vr_pixel);
        b <= blank; // blank from xvga display
        hs <= hsync; // hsync from xvga display
        vs <= vsync; // vsync from xvga display
@@ -569,7 +593,8 @@ module climber_color(beep, audio_reset_b,
    // figure out what com pixel to display, if any
     wire [23:0] greenComPixel = greenVertPixel | greenHorizPixel;
     wire [23:0] redComPixel = redVertPixel | redHorizPixel;
-    wire [23:0] comPixel = (greenComPixel) ? greenComPixel : ((redComPixel) ? redComPixel : 18'd0);
+    wire [23:0] comPixel = (greenComPixel && (colorSetting == 2'd0 || colorSetting == 2'd2)) ? greenComPixel :
+                           ((redComPixel && (colorSetting == 2'd1 || colorSetting == 2'd2)) ? redComPixel : 18'd0);
 
    // VGA Output.  In order to meet the setup and hold times of the
    // AD7125, we send it ~clk.
@@ -586,8 +611,11 @@ module climber_color(beep, audio_reset_b,
 
    assign led = ~{my_we, vpat[35:29]};
 
+   reg [17:0] centerPixel;
+
    always @(posedge clk) begin
-       dispdata <= {xCenterGreen[7:0], yCenterGreen[7:0], 16'hAA_AA, 1'b0, ntsc_addr[18:0]};
+       if (hcount == 360 && vcount == 240) centerPixel <= pixel;
+       dispdata <= {xSmoothGreen[7:0], ySmoothGreen[7:0], 4'hA, 2'b00, centerPixel, 4'hA, 1'b0, ntsc_addr[18:0]};
    end
 
 endmodule
@@ -713,26 +741,28 @@ module vram_display(reset,clk,hcount,vcount,vr_pixel,
     end
 
     // create blocks for display
-    blob #(.WIDTH(64), .HEIGHT(64), .COLOR(24'hF0_00_00))
-        redOnGreen(.x(0), .y(361), .hcount(hcount), .vcount(vcount),
-            .pixel(redOnGreenPixel)); // red half way down left side, green bg
-    blob #(.WIDTH(64), .HEIGHT(64), .COLOR(24'h00_F0_00))
-        greenOnRed(.x(960), .y(0), .hcount(hcount), .vcount(vcount),
-            .pixel(greenOnRedPixel)); // green in top right, red bg
-    blob #(.WIDTH(64), .HEIGHT(64), .COLOR(24'hF0_F0_F0))
-        whiteOnBlack(.x(480), .y(722), .hcount(hcount), .vcount(vcount),
-            .pixel(whiteOnBlackPixel)); // white center bottom, black BG
+    //blob #(.WIDTH(64), .HEIGHT(64), .COLOR(24'hF0_00_00))
+        //redOnGreen(.x(0), .y(361), .hcount(hcount), .vcount(vcount),
+            //.pixel(redOnGreenPixel)); // red half way down left side, green bg
+    //blob #(.WIDTH(64), .HEIGHT(64), .COLOR(24'h00_F0_00))
+        //greenOnRed(.x(960), .y(0), .hcount(hcount), .vcount(vcount),
+            //.pixel(greenOnRedPixel)); // green in top right, red bg
+    //blob #(.WIDTH(64), .HEIGHT(64), .COLOR(24'hF0_F0_F0))
+        //whiteOnBlack(.x(480), .y(722), .hcount(hcount), .vcount(vcount),
+            //.pixel(whiteOnBlackPixel)); // white center bottom, black BG
 
     // based on switches, figure out which blob to output	 
-    assign blobPixel = switches[1] ? {redOnGreenPixel[23:18], redOnGreenPixel[15:10], redOnGreenPixel[7:2]} :
-                            (switches[0] ? {greenOnRedPixel[23:18], greenOnRedPixel[15:10], greenOnRedPixel[7:2]} :
-                            {whiteOnBlackPixel[23:18], whiteOnBlackPixel[15:10], whiteOnBlackPixel[7:2]});
-    assign bgPixel = switches[1] ? 18'o00_70_00 : (switches[0] ? 18'o70_00_00 : 18'o00_00_00);
+    //assign blobPixel = switches[1] ? {redOnGreenPixel[23:18], redOnGreenPixel[15:10], redOnGreenPixel[7:2]} :
+                            //(switches[0] ? {greenOnRedPixel[23:18], greenOnRedPixel[15:10], greenOnRedPixel[7:2]} :
+                            //{whiteOnBlackPixel[23:18], whiteOnBlackPixel[15:10], whiteOnBlackPixel[7:2]});
+    //assign bgPixel = switches[1] ? 18'o00_70_00 : (switches[0] ? 18'o70_00_00 : 18'o00_00_00);
 
     // each 36-bit word from RAM is decoded to 2 segments
     // black is displayed if there is not another feed (eg around the camera)
-    assign normalPixel = (hcount >= 720 || vcount >= 460) ? 18'd0 : (hc2 == 2'd1 ? last_vr_data[17:0] : last_vr_data[35:0]);
-    assign vr_pixel = (switches[2]) ? normalPixel : (blobPixel ? blobPixel: bgPixel);
+    //assign normalPixel = (hcount >= 720 || vcount >= 460) ? 18'd0 : (hc2 == 2'd1 ? last_vr_data[17:0] : last_vr_data[35:0]);
+    //assign vr_pixel = (switches[2]) ? normalPixel : (blobPixel ? blobPixel: bgPixel);
+
+    assign vr_pixel = (hcount >= 720 || vcount >= 460) ? 18'd0 : (hc2 == 2'd1 ? last_vr_data[17:0] : last_vr_data[35:0]);
 
     //always @(*) begin
         //case (hc2)
