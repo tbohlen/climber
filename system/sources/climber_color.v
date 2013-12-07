@@ -513,17 +513,17 @@ module climber_color(beep, audio_reset_b,
     // draw lines to note the center of mass (for debugging, enable with switch
     // 4)
     wire [23:0] greenVertPixel, redVertPixel, greenHorizPixel, redHorizPixel;
-   blob #(.WIDTH(4), .HEIGHT(480), .COLOR(24'hFF_30_30)) redVert(.x(xSmoothRed), .y(0), .hcount(hcount), .vcount(vcount), .pixel(redVertPixel));
+    blob #(.WIDTH(4), .HEIGHT(480), .COLOR(24'hFF_30_30)) redVert(.x(xSmoothRed), .y(0), .hcount(hcount), .vcount(vcount), .pixel(redVertPixel));
     blob #(.WIDTH(720), .HEIGHT(4), .COLOR(24'hFF_30_30)) redHoriz(.x(0), .y(ySmoothRed), .hcount(hcount), .vcount(vcount), .pixel(redHorizPixel));
     blob #(.WIDTH(4), .HEIGHT(480), .COLOR(24'h30_FF_30)) greenVert(.x(xSmoothGreen), .y(0), .hcount(hcount), .vcount(vcount), .pixel(greenVertPixel));
     blob #(.WIDTH(720), .HEIGHT(4), .COLOR(24'h30_FF_30)) greenHorix(.x(0), .y(ySmoothGreen), .hcount(hcount), .vcount(vcount), .pixel(greenHorizPixel));
- 
-   // ADV7185 NTSC decoder interface code
-   // adv7185 initialization module
-   adv7185init adv7185(.reset(reset), .clock_27mhz(clock_27mhz),
-		       .source(1'b0), .tv_in_reset_b(tv_in_reset_b),
-		       .tv_in_i2c_clock(tv_in_i2c_clock),
-		       .tv_in_i2c_data(tv_in_i2c_data));
+
+    // ADV7185 NTSC decoder interface code
+    // adv7185 initialization module
+    adv7185init adv7185(.reset(reset), .clock_27mhz(clock_27mhz),
+        .source(1'b0), .tv_in_reset_b(tv_in_reset_b),
+        .tv_in_i2c_clock(tv_in_i2c_clock),
+        .tv_in_i2c_data(tv_in_i2c_data));
 
    wire [29:0] ycrcb;	// video data (luminance, chrominance)
    wire [2:0] fvh;	// sync for field, vertical, horizontal
@@ -583,8 +583,8 @@ module climber_color(beep, audio_reset_b,
    always @(posedge clk) begin
        // show which pixels are being picked up by the center of mass
        // calculators
-       pixel <= (greenIncluded && (colorSetting == 2'd0 || colorSetting == 2'd2)) ? 18'o000_777_000 :
-                ((redIncluded && (colorSetting == 2'd1 || colorSetting == 2'd2)) ? 18'o777_000_000 : vr_pixel);
+       pixel <= (greenIncluded && (colorSetting == 2'd0 || colorSetting == 2'd2)) ? 18'o00_77_00 :
+                ((redIncluded && (colorSetting == 2'd1 || colorSetting == 2'd2)) ? 18'o77_00_00 : vr_pixel);
        b <= blank; // blank from xvga display
        hs <= hsync; // hsync from xvga display
        vs <= vsync; // vsync from xvga display
