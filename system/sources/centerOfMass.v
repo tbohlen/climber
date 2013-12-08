@@ -30,13 +30,16 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
 	 reg [19:0] total;
 	 reg [28:0] xTotal, yTotal;
 
-    // current x*color total
-    // current y*color total
-    // current color total
-    // 32 bits so that a screen that is all the color of interest will
-    // not overflow.
-    // total and xBottom and yBottom only need 26 bits (actually fewer
-    // still)
+     // delay the input signals so that we can do a better calculation
+     reg [53:0] pixDelay;
+     reg [32:0] xDelay;
+     reg [29:0] yDelay;
+
+     always @(clk) begin
+         pixDelay <= {pixDelay[35:0] pixel};
+         xDelay <= {xDelay[21:0], x};
+         yDelay <= {yDelay[19:0], y};
+     end
 
     // dividers for finding x and y results
     reg [28:0] xTop, yTop;
