@@ -504,7 +504,7 @@ module climber_color(beep, audio_reset_b,
 
     centerOfMass greenCOM(.clk(clk), .reset(reset), .pixel(vr_pixel),
                  .x(hcount), .y(vcount), .colorSelect(2'd1), .xCenter(xCenterGreen),
-                 .yCenter(yCenterGreen), .included(greenIncludedd), .switches(switch[7:0]), .setButton(greenSetButton), .resetButton(greenResetButton));
+                 .yCenter(yCenterGreen), .included(greenIncluded), .switches(switch[7:0]), .setButton(greenSetButton), .resetButton(greenResetButton));
 
     smoother greenSmooth(.clk(clk), .reset(reset), .x(xCenterGreen), .y(yCenterGreen), .smoothedX(xSmoothGreen), .smoothedY(ySmoothGreen));
     smoother redSmooth(.clk(clk), .reset(reset), .x(xCenterRed), .y(yCenterRed), .smoothedX(xSmoothRed), .smoothedY(ySmoothRed));
