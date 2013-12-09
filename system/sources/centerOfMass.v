@@ -55,9 +55,11 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
         );
 
     // connect outputs
-    // if the divisor is 0 set the output to a default (center0
-    assign xCenter = (!xBottom) ? 10'd360 : xQuotient[9:0];
-    assign yCenter = (!yBottom) ? 10'd240 : yQuotient[9:0];
+    // if the divisor is 0 set the output to a default (center)
+    // Also note that we add a constant in order to center the detectable positions
+    // on the screen
+    assign xCenter = (!xBottom) ? 10'd512 : (xQuotient[9:0] + 10'd152);
+    assign yCenter = (!yBottom) ? 10'd384 : (yQuotient[9:0] + 10'd144);
 
     // set and reset the colors
     // calculate color parameters: min color and min color diff
@@ -100,7 +102,7 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
                     (otherColor2 < mainColor) &&
                     (mainColor - otherColor2 > colorDiff) &&
                     valid;
-	
+
      // delay the input signals so that we can do a better calculation
      reg [32:0] xDelay;
      reg [29:0] yDelay;

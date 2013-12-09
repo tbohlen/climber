@@ -172,7 +172,11 @@ module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, fram
    wire [8:0] y_addr = y_delay[18:10] - 9'd12;
    wire [9:0] x_addr = x_delay[19:10];
 
-   wire [18:0] myaddr = {y_addr[8:0], eo_delay[1], x_addr[9:1]};
+   // reverse the x address so that we have a mirrored screen (more natural to
+   // user)
+   wire [9:0] x_addr_flipped = 10'd719 - x_addr;
+
+   wire [18:0] myaddr = {y_addr[8:0], eo_delay[1], x_addr_flipped[9:1]};
 
    // Now address (0,0,0) contains pixel data(0,0) etc.
 

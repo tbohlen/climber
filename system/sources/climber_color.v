@@ -383,8 +383,15 @@ module climber_color(beep, audio_reset_b,
    assign analyzer4_data = 16'h0;
    assign analyzer4_clock = 1'b1;
 
+
+
+
    ////////////////////////////////////////////////////////////////////////////
-   // Demonstration of ZBT RAM as video memory
+   // Climber Code
+   ////////////////////////////////////////////////////////////////////////////
+
+
+
 
    // use FPGA's digital clock manager to produce a
    // 65MHz clock (actually 64.8MHz)
@@ -396,25 +403,7 @@ module climber_color(beep, audio_reset_b,
    // synthesis attribute CLKIN_PERIOD of vclk1 is 37
    BUFG vclk2(.O(clock_65mhz),.I(clock_65mhz_unbuf));
 
-//   wire clk = clock_65mhz;  // gph 2011-Nov-10
-
-/*   ////////////////////////////////////////////////////////////////////////////
-   // Demonstration of ZBT RAM as video memory
-
-   // use FPGA's digital clock manager to produce a
-   // 40MHz clock (actually 40.5MHz)
-   wire clock_40mhz_unbuf,clock_40mhz;
-   DCM vclk1(.CLKIN(clock_27mhz),.CLKFX(clock_40mhz_unbuf));
-   // synthesis attribute CLKFX_DIVIDE of vclk1 is 2
-   // synthesis attribute CLKFX_MULTIPLY of vclk1 is 3
-   // synthesis attribute CLK_FEEDBACK of vclk1 is NONE
-   // synthesis attribute CLKIN_PERIOD of vclk1 is 37
-   BUFG vclk2(.O(clock_40mhz),.I(clock_40mhz_unbuf));
-
-   wire clk = clock_40mhz;
-*/
-	wire locked;
-	//assign clock_feedback_out = 0; // gph 2011-Nov-10
+   wire locked;
 
    ramclock rc(.ref_clock(clock_65mhz), .fpga_clock(clk),
 					.ram0_clock(ram0_clk),
@@ -435,7 +424,6 @@ module climber_color(beep, audio_reset_b,
    assign reset = user_reset | power_on_reset;
 
    // display module for debugging
-
    reg [63:0] dispdata;
    display_16hex hexdisp1(reset, clk, dispdata,
 			  disp_blank, disp_clock, disp_rs, disp_ce_b,
@@ -619,6 +607,7 @@ module climber_color(beep, audio_reset_b,
    wire [9:0] userhand2y;
    reg usergrab1;
    reg usergrab2;
+   wire [23:0] gamepixel;
 
    wire [12*5+13*5-1:0] holdinfo;
    assign infoin1 = {reset, hcount, vcount, hsync, vsync, blank, userhand1x, userhand1y, userhand2x, userhand2y, usergrab2, usergrab1};
@@ -631,7 +620,8 @@ module climber_color(beep, audio_reset_b,
   pixelinfo pixelmod(.clockin(clock_3),.infoin(infoin3), .screenx(screenx), .screeny(screeny), .exists(exists2), .pclock(pclock), .phsync(phsync), .pvsync(pvsync), .pblank(pblank), .pixel(gamepixel));
 
   // just in case, sync everything with clock for the camera/tracking output
-  reg trackingBlank, trackingHsync, trackingVsync, trackingGreenPixel, trackingRedPixel;
+  reg trackingBlank, trackingHsync, trackingVsync;
+  reg [23:0] trackingGreenPixel, trackingRedPixel;
   always @(posedge clk) begin
     trackingBlank <= blank;
     trackingHsync <= hsync;
@@ -662,9 +652,6 @@ module climber_color(beep, audio_reset_b,
                    vs <= pvsync;
                end
        endcase
-        // blank from xvga display
-        // hsync from xvga display
-        // vsync from xvga display
    end
 
    // VGA Output.  In order to meet the setup and hold times of the
