@@ -27,24 +27,13 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
                     output [9:0] xCenter, output [9:0] yCenter,
                     output included, input [7:0] switches, input setButton, input resetButton, output reg set);
 
-	 reg [19:0] total;
-	 reg [28:0] xTotal, yTotal;
-
-     // delay the input signals so that we can do a better calculation
-     reg [53:0] pixDelay;
-     reg [32:0] xDelay;
-     reg [29:0] yDelay;
-
-     always @(clk) begin
-         pixDelay <= {pixDelay[35:0] pixel};
-         xDelay <= {xDelay[21:0], x};
-         yDelay <= {yDelay[19:0], y};
-     end
+	 reg [22:0] total;
+	 reg [31:0] xTotal, yTotal;
 
     // dividers for finding x and y results
-    reg [28:0] xTop, yTop;
-    reg [19:0] xBottom, yBottom;
-    wire [28:0] xQuotient, yQuotient, xRemainder, yRemainder;
+    reg [31:0] xTop, yTop;
+    reg [22:0] xBottom, yBottom;
+    wire [31:0] xQuotient, yQuotient, xRemainder, yRemainder;
     wire xRFD, yRFD;
 
     comDivider xDiv(
@@ -70,17 +59,8 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
     assign xCenter = (!xBottom) ? 10'd360 : xQuotient[9:0];
     assign yCenter = (!yBottom) ? 10'd240 : yQuotient[9:0];
 
-    // calculate masses and increment xColor, yColor, and color
-    // downsample color by 1 order of magnitude
-    wire [4:0] color0 = pixel[17:13];
-    wire [4:0] color1 = pixel[11:7];
-    wire [4:0] color2 = pixel[5:1];
-
-    wire [4:0] mainColor = (colorSelect == 2'd0) ? color0 : ((colorSelect == 2'd1) ? color1 : color2);
-    wire [4:0] otherColor1 = (colorSelect == 2'd0) ? color1 : ((colorSelect == 2'd1) ? color2 : color0);
-    wire [4:0] otherColor2 = (colorSelect == 2'd0) ? color2 : ((colorSelect == 2'd1) ? color0 : color1);
-
     // set and reset the colors
+    // calculate color parameters: min color and min color diff
     reg [4:0] setColorDiff = 5'd0;
     reg [4:0] setColorMin = 5'd0;
     reg oldSet, oldReset;
@@ -101,12 +81,44 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
     wire [4:0] colorDiff = set ? setColorDiff : {switches[3:0], 1'b1};
     wire [4:0] colorMin = set ? setColorMin : {switches[7:4], 1'b1};
 
+    // calculate masses and increment xColor, yColor, and color
+    // downsample color by 1 order of magnitude
+    wire [4:0] color0 = pixel[17:13];
+    wire [4:0] color1 = pixel[11:7];
+    wire [4:0] color2 = pixel[5:1];
+
+    wire [4:0] mainColor = (colorSelect == 2'd0) ? color0 : ((colorSelect == 2'd1) ? color1 : color2);
+    wire [4:0] otherColor1 = (colorSelect == 2'd0) ? color1 : ((colorSelect == 2'd1) ? color2 : color0);
+    wire [4:0] otherColor2 = (colorSelect == 2'd0) ? color2 : ((colorSelect == 2'd1) ? color0 : color1);
+
     assign included = mainColor > colorMin &&
                     (otherColor1 < mainColor) &&
                     (mainColor - otherColor1 > colorDiff) &&
                     (otherColor2 < mainColor) &&
                     (mainColor - otherColor2 > colorDiff) &&
-                    y < 786 && x < 1024;
+                    valid;
+
+     // check to make sure this is a valid pixel
+     wire valid = y < 786 && x < 1024;
+
+     // delay the input signals so that we can do a better calculation
+     reg [32:0] xDelay;
+     reg [29:0] yDelay;
+     reg [2:0] includeDelay;
+
+     always @(posedge clk) begin
+         if (valid) begin
+             xDelay <= {xDelay[21:0], x};
+             yDelay <= {yDelay[19:0], y};
+             includeDelay <= {includeDelay[2:0], included};
+         end
+     end
+
+     // calculate weighting
+     wire [2:0] weight = (& includeDelay) ? 4 : ((~| includeDelay) ? 1 : 2);
+     wire [12:0] xValue = weight * x;
+     wire [12:0] yValue = weight * y;
+
     always @(posedge clk) begin
         if (reset) begin
             // reset all values
@@ -122,14 +134,14 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
                 yTop <= yTotal;
                 xBottom <= total;
                 yBottom <= total;
-                xTotal <= included ? {19'd0, x[9:0]} : 29'd0;
-                yTotal <= included ? {19'd0, y[9:0]} : 29'd0;
-                total <= {19'd0, included};
+                xTotal <= included ? {19'd0, xValue} : 32'd0;
+                yTotal <= included ? {19'd0, yValue} : 32'd0;
+                total <= included ? {20'd0, weight} : 23'd0;
             end
             else begin
-                xTotal <= included ? xTotal + {19'd0, x[9:0]} : xTotal;
-                yTotal <= included ? yTotal + {19'd0, y[9:0]} : yTotal;
-                total <= total + {19'd0, included};
+                xTotal <= included ? xTotal + {19'd0, xValue} : xTotal;
+                yTotal <= included ? yTotal + {19'd0, yValue} : yTotal;
+                total <= included ? total + {20'd0, weight} : total;
             end
         end
     end
