@@ -91,16 +91,16 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
     wire [4:0] otherColor1 = (colorSelect == 2'd0) ? color1 : ((colorSelect == 2'd1) ? color2 : color0);
     wire [4:0] otherColor2 = (colorSelect == 2'd0) ? color2 : ((colorSelect == 2'd1) ? color0 : color1);
 
+     // check to make sure this is a valid pixel
+     wire valid = y < 786 && x < 1024;
+
     assign included = mainColor > colorMin &&
                     (otherColor1 < mainColor) &&
                     (mainColor - otherColor1 > colorDiff) &&
                     (otherColor2 < mainColor) &&
                     (mainColor - otherColor2 > colorDiff) &&
                     valid;
-
-     // check to make sure this is a valid pixel
-     wire valid = y < 786 && x < 1024;
-
+	
      // delay the input signals so that we can do a better calculation
      reg [32:0] xDelay;
      reg [29:0] yDelay;

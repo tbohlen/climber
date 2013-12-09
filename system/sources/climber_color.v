@@ -481,18 +481,18 @@ module climber_color(beep, audio_reset_b,
     wire switchColors = button0Clean;
     reg oldSwitchColors = 0;
     wire switchColorsEdge = switchColors & ~oldSwitchColors;
-    reg [1:0] colorSetting = 2'b0; // 0 = green, 1 = red, 2 = both, 3 = none
+    reg [1:0] screenSetting = 2'b0; // 0 = green, 1 = red, 2 = both, 3 = none
     always @(posedge clk) begin
         oldSwitchColors <= switchColors;
         // on edge switch setting
-        if (switchColorsEdge) colorSetting <= colorSetting + 1;
+        if (switchColorsEdge) screenSetting <= screenSetting + 1;
     end
 
     // set buttons
-    wire redSetButton = button1Clean && colorSetting == 2'd1;
-    wire greenSetButton = button1Clean && colorSetting == 2'd0;
-    wire redResetButton = button2Clean && colorSetting == 2'd1;
-    wire greenResetButton = button2Clean && colorSetting == 2'd0;
+    wire redSetButton = button1Clean && screenSetting == 2'd1;
+    wire greenSetButton = button1Clean && screenSetting == 2'd0;
+    wire redResetButton = button2Clean && screenSetting == 2'd1;
+    wire greenResetButton = button2Clean && screenSetting == 2'd0;
 
     // center of mass calculation
     wire [9:0] xCenterRed, xCenterGreen, yCenterRed, yCenterGreen, xSmoothGreen, xSmoothRed, ySmoothGreen, ySmoothRed;
@@ -577,30 +577,101 @@ module climber_color(beep, audio_reset_b,
 
    // select output pixel data
 
-   reg [17:0] pixel;
+   reg [23:0] pixel;
    reg b,hs,vs;
 
-   always @(posedge clk) begin
-       // show which pixels are being picked up by the center of mass
-       // calculators
-       pixel <= (greenIncluded && (colorSetting == 2'd0 || colorSetting == 2'd2)) ? 18'o00_77_00 :
-                ((redIncluded && (colorSetting == 2'd1 || colorSetting == 2'd2)) ? 18'o77_00_00 : vr_pixel);
-       b <= blank; // blank from xvga display
-       hs <= hsync; // hsync from xvga display
-       vs <= vsync; // vsync from xvga display
-   end
+   // figure out the green pixel
+    wire [23:0] greenCrossPixel = greenVertPixel | greenHorizPixel;
+    wire [17:0] greenComPixel = (greenIncluded && (screenSetting == 2'd0)) ? 18'o00_77_00 : vr_pixel;
+    wire [23:0] greenScreenPixel = greenCrossPixel ? greenCrossPixel : {greenComPixel[17:12], 2'd0, greenComPixel[11:6], 2'd0, greenComPixel[5:0], 2'd0};
 
-   // figure out what com pixel to display, if any
-    wire [23:0] greenComPixel = greenVertPixel | greenHorizPixel;
-    wire [23:0] redComPixel = redVertPixel | redHorizPixel;
-    wire [23:0] comPixel = (greenComPixel && (colorSetting == 2'd0 || colorSetting == 2'd2)) ? greenComPixel :
-                           ((redComPixel && (colorSetting == 2'd1 || colorSetting == 2'd2)) ? redComPixel : 18'd0);
+   // figure out the red pixel
+    wire [23:0] redCrossPixel = redVertPixel | redHorizPixel;
+    wire [17:0] redComPixel = (redIncluded && (screenSetting == 2'd1)) ? 18'o77_00_00 : vr_pixel;
+    wire [23:0] redScreenPixel = redCrossPixel ? redCrossPixel : {redComPixel[17:12], 2'd0, redComPixel[11:6], 2'd0, redComPixel[5:0], 2'd0};
+
+   wire exists1;
+   wire exists2;
+
+   wire [68:0]infoin1;
+   wire [68:0]infoin2; //<----replaces usergrab with gamegrab given to infoin3
+   wire [68:0]infoin3;
+
+   wire clock_1;
+   wire clock_2;
+   wire clock_3;
+   wire pclock;
+   wire phsync;
+   wire pvsync;
+   wire pblank;
+
+   assign clock_1 = clock_65mhz;
+
+   reg signed [11:0]screenx;
+   reg signed [12:0]screeny;
+   wire signed [11:0]screenxmove;
+   wire signed [12:0]screenymove;
+   wire signed [11:0]screenxmap;
+   wire signed [12:0]screenymap;
+   wire [10:0] userhand1x;
+   wire [9:0]  userhand1y;
+   wire [10:0] userhand2x;
+   wire [9:0] userhand2y;
+   reg usergrab1;
+   reg usergrab2;
+
+   wire [12*5+13*5-1:0] holdinfo;
+   assign infoin1 = {reset, hcount, vcount, hsync, vsync, blank, userhand1x, userhand1y, userhand2x, userhand2y, usergrab2, usergrab1};
+
+	assign {userhand1x, userhand1y, userhand2x, userhand2y} = {xSmoothRed, ySmoothRed, xSmoothGreen,ySmoothGreen};
+  mapeditor mapeditor(.infoin(infoin1), .switch (switch[1]), .screenxin(screenx), .screenyin(screeny), .screenx(screenxmap), .screeny(screenymap));
+  handholds holds(.clockin(clock_1), .infoin(infoin1), .screenx(screenx), .screeny(screeny),  .infout(infoin2), .exists(exists1), .clockout(clock_2));
+  grab       grab(.clockin(clock_2), .infoin(infoin2), .existsin(exists1), .infout(infoin3), .existsout(exists2),.clockout(clock_3));
+  movement   move(.infoin(infoin3), .screenxin(screenx), .screenyin(screeny), .switch(switch[1]), .screenx(screenxmove), .screeny(screenymove));
+  pixelinfo pixelmod(.clockin(clock_3),.infoin(infoin3), .screenx(screenx), .screeny(screeny), .exists(exists2), .pclock(pclock), .phsync(phsync), .pvsync(pvsync), .pblank(pblank), .pixel(gamepixel));
+
+  // just in case, sync everything with clock for the camera/tracking output
+  reg trackingBlank, trackingHsync, trackingVsync, trackingGreenPixel, trackingRedPixel;
+  always @(posedge clk) begin
+    trackingBlank <= blank;
+    trackingHsync <= hsync;
+    trackingVsync <= vsync;
+    trackingGreenPixel <= greenScreenPixel;
+    trackingRedPixel <= redScreenPixel;
+  end
+
+   always @(*) begin
+       // show pixel based on screen setting
+       case (screenSetting)
+           2'd0: begin
+                   pixel <= trackingGreenPixel;
+                   b <= trackingBlank;
+                   hs <= trackingHsync;
+                   vs <= trackingVsync;
+               end
+           2'd1: begin
+                   pixel <= trackingRedPixel;
+                   b <= trackingBlank;
+                   hs <= trackingHsync;
+                   vs <= trackingVsync;
+               end
+           default: begin
+                   pixel <= gamepixel;
+                   b <= pblank;
+                   hs <= phsync;
+                   vs <= pvsync;
+               end
+       endcase
+        // blank from xvga display
+        // hsync from xvga display
+        // vsync from xvga display
+   end
 
    // VGA Output.  In order to meet the setup and hold times of the
    // AD7125, we send it ~clk.
-   assign vga_out_red = comPixel ? comPixel[23:16] : {pixel[17:12], 2'd0};
-   assign vga_out_green = comPixel ? comPixel[15:8] : {pixel[11:6], 2'd0};
-   assign vga_out_blue = comPixel ? comPixel[7:0] : {pixel[5:0], 2'd0};
+   assign vga_out_red = pixel[23:16];
+   assign vga_out_green = pixel[15:8];
+   assign vga_out_blue = pixel[7:0];
    assign vga_out_sync_b = 1'b1;    // not used
    assign vga_out_pixel_clock = ~clk;
    assign vga_out_blank_b = ~b;
