@@ -1,0 +1,25 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+Two major learnings from this project are to be careful with the construction of
+any hardware components and, of course, to make sure that all registers have the
+correct length and are appropriately signed.
+
+Connections between the motors, flex sensors, and wires on each glove came loose
+and broke very easily, and the flex sensors in particular deteriorated over
+time. Any project using flexible gloves and sensors like this
+one needs to be aware of the wear and tear endured by any components attached
+directly to the glove.
+
+Overall, though, this project was a success. The use of colored gloves and an
+NTSC camera coupled with a high-quality tracking algorithm provided the smooth
+hand tracking that the system relied on. Erratic hand motion would have resulted
+in an unacceptably jittery screen because of the direct tie between hand
+position and screen output.
+
+The gameplay module used the available inputs to display a set of handholds to
+the screen and allowed the player to "climb" the virtual wall by closing their
+hand while hovering over a hold and moving their hand downward. It provided
+simple haptic feedback based on whether or not each hand was in contact with a
+hold, but was chosen to be removed due to power supply issues.
+

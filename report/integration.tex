@@ -1,0 +1,19 @@
+\section{Integration}
+\label{sec:integration}
+
+While integrating the two major modules was initially frustrating, it did not
+prove to be as difficult as once thought. The only information passed between
+each module is the x and y positions of each hand. Because this information is
+updated only once a frame (which is very infrequent compared to the clock),
+setup and hold times were very lenient, and clock skew between the two could
+essentially be ignored. One integration issue that did come up was concerning
+the output to the VGA display. Each major module has their own VGA output, which
+then multiplexed. The tracking module has the calibration display, and the
+gameplay module displays the game. The outputs of both of these were not in sync
+with each other, as there was a long propagation delay through the gameplay
+module after already passing through the tracking module. Initially, when the
+output multiplexer selected which sets of signals to display, it used
+non-blocking assignments dictated by the tracking blocks clock, which did not
+meet the setup a holds times of the gameplay block. This initially aroused
+suspicion of a much larger clocking issue, but after switching the multiplexer
+to blocking assignments, the issue was fixed.

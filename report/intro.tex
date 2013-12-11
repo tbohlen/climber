@@ -1,0 +1,19 @@
+\section{Introduction}
+\label{sec:intro}
+
+This project aimed to create a rock climbing video game in which the player
+climbs a virtual wall by making motions in the real world, and it achieved its
+goal. The player is able to reach up, down, left, and right in reality in order
+to find and grasp virtual handholds. If the player lets go of all handholds,
+they fall back to the beginning. When the player reaches the top of the wall,
+the game is over and the movement stops until reset. The users primary input to
+the game is a set of colored gloves, equipped with haptic feedback motors, and
+flex sensors. Each glove is separately colored to enable hand tracking by a
+video camera. The flex sensors on the glove are used to sense when the player
+makes a physical grabbing motion that is then replicated in the game. A force
+feedback system was designed and implemented, however it caused a drop in power
+supply voltage, making the flex sensors unreliable when the motors vibrate.
+Because the motors were used to indicate that a hold could be grabbed, it was
+considered too large of a drawback, and not enabled in the final design.
+Additionally, the stretch goal of including a map editor was partially
+implemented, however movement within the editor causes glitches.
