@@ -67,6 +67,9 @@
 //
 // Complete change history (including bug fixes)
 //
+// 2013-Dec-9: Modified for use with climber game, build by Turner Bohlen and
+//             Chris Lang
+//
 // 2011-Nov-10: Changed resolution to 1024 * 768.
 //					 Added back ramclok to deskew RAM clock
 //
@@ -436,7 +439,6 @@ module climber_color(beep, audio_reset_b,
    xvga xvga1(clk,hcount,vcount,hsync,vsync,blank);
 
    // wire up to ZBT ram
-
    wire [35:0] vram_write_data;
    wire [35:0] vram_read_data;
    wire [18:0] vram_addr;
@@ -455,17 +457,17 @@ module climber_color(beep, audio_reset_b,
    vram_display vd1(reset,clk,hcount,vcount,vr_pixel,
 		    vramReadAddr,vram_read_data, switch[7:5]);
 
-    // motor output
+    // clean up button signals for later use
     wire button3Clean, button2Clean, button1Clean, button0Clean;
     debounce db3(.reset(reset), .clk(clk), .noisy(~button3), .clean(button3Clean));
     debounce db2(.reset(reset), .clk(clk), .noisy(~button2), .clean(button2Clean));
     debounce db1(.reset(reset), .clk(clk), .noisy(~button1), .clean(button1Clean));
     debounce db0(.reset(reset), .clk(clk), .noisy(~button0), .clean(button0Clean));
-    //motorDriver motorLeft(.motorState(button3Clean), .drive(user3[0]));
-    //motorDriver motorRight(.motorState(button2Clean), .drive(user3[1]));
 
     // use a button to switch between displaying red, green, and both
-    //find edge of button input
+    // find edge of button input
+    // NOTE: settings 2 and 3 both point to the same screen. Would be good to do
+    // reset after 2'd2 instead of relying on looping
     wire switchColors = button0Clean;
     reg oldSwitchColors = 0;
     wire switchColorsEdge = switchColors & ~oldSwitchColors;
@@ -476,7 +478,12 @@ module climber_color(beep, audio_reset_b,
         if (switchColorsEdge) screenSetting <= screenSetting + 1;
     end
 
-    // set buttons
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Center of Mass Calculation and Configuration
+    ///////////////////////////////////////////////////////////////////////////
+
+    // set and reset buttons for configuration functionality
     wire redSetButton = button1Clean && screenSetting == 2'd1;
     wire greenSetButton = button1Clean && screenSetting == 2'd0;
     wire redResetButton = button2Clean && screenSetting == 2'd1;
@@ -494,17 +501,21 @@ module climber_color(beep, audio_reset_b,
                  .x(hcount), .y(vcount), .colorSelect(2'd1), .xCenter(xCenterGreen),
                  .yCenter(yCenterGreen), .included(greenIncluded), .switches(switch[7:0]), .setButton(greenSetButton), .resetButton(greenResetButton));
 
+    // smoothing to get rid of high-frequency signals in the center of mass
+    // result
     smoother greenSmooth(.clk(clk), .reset(reset), .x(xCenterGreen), .y(yCenterGreen), .smoothedX(xSmoothGreen), .smoothedY(ySmoothGreen));
     smoother redSmooth(.clk(clk), .reset(reset), .x(xCenterRed), .y(yCenterRed), .smoothedX(xSmoothRed), .smoothedY(ySmoothRed));
 
-
-    // draw lines to note the center of mass (for debugging, enable with switch
-    // 4)
+    // draw lines to note the center of mass (for debugging, enable on the
+    // configuration screens)
     wire [23:0] greenVertPixel, redVertPixel, greenHorizPixel, redHorizPixel;
     blob #(.WIDTH(4), .HEIGHT(480), .COLOR(24'hFF_30_30)) redVert(.x(xSmoothRed), .y(0), .hcount(hcount), .vcount(vcount), .pixel(redVertPixel));
     blob #(.WIDTH(720), .HEIGHT(4), .COLOR(24'hFF_30_30)) redHoriz(.x(0), .y(ySmoothRed), .hcount(hcount), .vcount(vcount), .pixel(redHorizPixel));
     blob #(.WIDTH(4), .HEIGHT(480), .COLOR(24'h30_FF_30)) greenVert(.x(xSmoothGreen), .y(0), .hcount(hcount), .vcount(vcount), .pixel(greenVertPixel));
     blob #(.WIDTH(720), .HEIGHT(4), .COLOR(24'h30_FF_30)) greenHorix(.x(0), .y(ySmoothGreen), .hcount(hcount), .vcount(vcount), .pixel(greenHorizPixel));
+
+
+
 
     // ADV7185 NTSC decoder interface code
     // adv7185 initialization module
@@ -513,14 +524,21 @@ module climber_color(beep, audio_reset_b,
         .tv_in_i2c_clock(tv_in_i2c_clock),
         .tv_in_i2c_data(tv_in_i2c_data));
 
-   wire [29:0] ycrcb;	// video data (luminance, chrominance)
-   wire [2:0] fvh;	// sync for field, vertical, horizontal
-   wire       dv;	// data valid
+    wire [29:0] ycrcb;	// video data (luminance, chrominance)
+    wire [2:0] fvh;	// sync for field, vertical, horizontal
+    wire       dv;	// data valid
 
-   ntsc_decode decode (.clk(tv_in_line_clock1), .reset(reset),
-       .tv_in_ycrcb(tv_in_ycrcb[19:10]),
-       .ycrcb(ycrcb), .f(fvh[2]),
-       .v(fvh[1]), .h(fvh[0]), .data_valid(dv));
+    ntsc_decode decode (.clk(tv_in_line_clock1), .reset(reset),
+        .tv_in_ycrcb(tv_in_ycrcb[19:10]),
+        .ycrcb(ycrcb), .f(fvh[2]),
+        .v(fvh[1]), .h(fvh[0]), .data_valid(dv));
+
+
+
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Pixel storage in ZBT
+    ///////////////////////////////////////////////////////////////////////////
 
     // change to 24-bit RGB
     // this operation runs on the LLC, not the system clock
@@ -533,134 +551,167 @@ module climber_color(beep, audio_reset_b,
     // order to cut down on storage
     wire [17:0] rgbDataIn = {rgb[23:18], rgb[15:10], rgb[7:2]};
 
-   // code to write NTSC data to video memory
-   // stores the data in 36-bit chunks and figures out where they should go in
-   // memory
-   wire [18:0] ntsc_addr;
-   wire [35:0] ntsc_data;
+    // code to write NTSC data to video memory
+    // stores the data in 36-bit chunks and figures out where they should go in
+    // memory
+    wire [18:0] ntsc_addr;
+    wire [35:0] ntsc_data;
 
-   ntsc_to_zbt n2z (.clk(clk), .vclk(tv_in_line_clock1), .fvh(fvh),
-       .dataValid(dv), .dataIn(rgbDataIn), .ntsc_addr(ntsc_addr),
-       .ntsc_data(ntsc_data));
+    ntsc_to_zbt n2z (.clk(clk), .vclk(tv_in_line_clock1), .fvh(fvh),
+        .dataValid(dv), .dataIn(rgbDataIn), .ntsc_addr(ntsc_addr),
+        .ntsc_data(ntsc_data));
 
-   // code to write pattern to ZBT memory
-   reg [31:0]	count;
-   always @(posedge clk) begin
-       count <= reset ? 0 : count + 1;
-   end
 
-   wire [18:0]	vram_addr2 = count[19:1];
-   wire [35:0]	vpat = {2{count[8:3], 6'b00_00_00, count[8:3]}};//switch[0] ? 36'd0 : {2{count[8:3], 6'b00_00_00, count[8:3]}};
 
-   // mux selecting read/write to memory based on which write-enable is chosen
 
-   wire	        sw_ntsc = 1; // if 1 then saves video data
-   wire	        my_we = sw_ntsc ? (hcount[0]==1'd1) : blank;
-   wire [18:0]	write_addr = sw_ntsc ? ntsc_addr : vram_addr2;
-   wire [35:0]	write_data = sw_ntsc ? ntsc_data : vpat;
+    ///////////////////////////////////////////////////////////////////////////
+    // code to write pattern to ZBT memory
+    // DISABLED. Always writes video to memory
+    ///////////////////////////////////////////////////////////////////////////
 
-   assign	vram_addr = my_we ? write_addr : vramReadAddr;
-   assign	vram_we = my_we;
-   assign	vram_write_data = write_data;
+    reg [31:0]	count;
+    always @(posedge clk) begin
+        count <= reset ? 0 : count + 1;
+    end
 
-   // select output pixel data
+    wire [18:0]	vram_addr2 = count[19:1];
+    wire [35:0]	vpat = {2{count[8:3], 6'b00_00_00, count[8:3]}};//switch[0] ? 36'd0 : {2{count[8:3], 6'b00_00_00, count[8:3]}};
 
-   reg [23:0] pixel;
-   reg b,hs,vs;
 
-   // figure out the green pixel
+    // mux selecting read/write to memory based on which write-enable is chosen
+    wire	        sw_ntsc = 1; // if 1 then saves video data
+    wire	        my_we = sw_ntsc ? (hcount[0]==1'd1) : blank;
+    wire [18:0]	write_addr = sw_ntsc ? ntsc_addr : vram_addr2;
+    wire [35:0]	write_data = sw_ntsc ? ntsc_data : vpat;
+
+    assign	vram_addr = my_we ? write_addr : vramReadAddr;
+    assign	vram_we = my_we;
+    assign	vram_write_data = write_data;
+
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Determine pixel to display to screen
+    ///////////////////////////////////////////////////////////////////////////
+
+    reg [23:0] pixel;
+    reg b,hs,vs;
+
+    // figure out the green configuration screen pixel
     wire [23:0] greenCrossPixel = greenVertPixel | greenHorizPixel;
     wire [17:0] greenComPixel = (greenIncluded && (screenSetting == 2'd0)) ? 18'o00_77_00 : vr_pixel;
     wire [23:0] greenScreenPixel = greenCrossPixel ? greenCrossPixel : {greenComPixel[17:12], 2'd0, greenComPixel[11:6], 2'd0, greenComPixel[5:0], 2'd0};
 
-   // figure out the red pixel
+    // figure out the red configuration screen pixel
     wire [23:0] redCrossPixel = redVertPixel | redHorizPixel;
     wire [17:0] redComPixel = (redIncluded && (screenSetting == 2'd1)) ? 18'o77_00_00 : vr_pixel;
     wire [23:0] redScreenPixel = redCrossPixel ? redCrossPixel : {redComPixel[17:12], 2'd0, redComPixel[11:6], 2'd0, redComPixel[5:0], 2'd0};
 
-   wire exists1;
-   wire exists2;
 
-   wire [68:0]infoin1;
-   wire [68:0]infoin2; //<----replaces usergrab with gamegrab given to infoin3
-   wire [68:0]infoin3;
+    ///////////////////////////////////////////////////////////////////////////
+    // Gameplay module and gameplay pixel calculation
+    ///////////////////////////////////////////////////////////////////////////
 
-   wire clock_1;
-   wire clock_2;
-   wire clock_3;
-   wire pclock;
-   wire phsync;
-   wire pvsync;
-   wire pblank;
+    wire exists1;        /// pipeline of exist signal
+    wire exists2;
 
-   assign clock_1 = clock_65mhz;
+    reg [68:0]infoin1;
+    wire [68:0]infoin2; //<----replaces usergrab with gamegrab given to infoin3
+    wire [68:0]infoin3;
 
-   reg signed [11:0]screenx;
-   reg signed [12:0]screeny;
-   wire signed [11:0]screenxmove;
-   wire signed [12:0]screenymove;
-   wire signed [11:0]screenxmap;
-   wire signed [12:0]screenymap;
-   wire [10:0] userhand1x;
-   wire [9:0]  userhand1y;
-   wire [10:0] userhand2x;
-   wire [9:0] userhand2y;
-   reg usergrab1;
-   reg usergrab2;
-   wire [23:0] gamepixel;
+    wire clock_1;
+    wire clock_2;           // pipeline of clock
+    wire clock_3;
+    wire pclock;
+    wire phsync;            // pipelined video signals
+    wire pvsync;
+    wire pblank;
 
-   wire [12*5+13*5-1:0] holdinfo;
-   assign infoin1 = {reset, hcount, vcount, hsync, vsync, blank, userhand1x, userhand1y, userhand2x, userhand2y, usergrab2, usergrab1};
+    assign clock_1 = clock_65mhz;
 
-	assign {userhand1x, userhand1y, userhand2x, userhand2y} = {xSmoothRed, ySmoothRed, xSmoothGreen,ySmoothGreen};
-  mapeditor mapeditor(.infoin(infoin1), .switch (switch[1]), .screenxin(screenx), .screenyin(screeny), .screenx(screenxmap), .screeny(screenymap));
-  handholds holds(.clockin(clock_1), .infoin(infoin1), .screenx(screenx), .screeny(screeny),  .infout(infoin2), .exists(exists1), .clockout(clock_2));
-  grab       grab(.clockin(clock_2), .infoin(infoin2), .existsin(exists1), .infout(infoin3), .existsout(exists2),.clockout(clock_3));
-  movement   move(.infoin(infoin3), .screenxin(screenx), .screenyin(screeny), .switch(switch[1]), .screenx(screenxmove), .screeny(screenymove));
-  pixelinfo pixelmod(.clockin(clock_3),.infoin(infoin3), .screenx(screenx), .screeny(screeny), .exists(exists2), .pclock(pclock), .phsync(phsync), .pvsync(pvsync), .pblank(pblank), .pixel(gamepixel));
+    wire signed [11:0]screenx;
+    wire signed [12:0]screeny;
+    wire signed [11:0]screenxmove;
+    wire signed [12:0]screenymove;       // only screenx used, other values used in older version of map editor
+    wire signed [11:0]screenxmap;
+    wire signed [12:0]screenymap;
+    reg [10:0] userhand1x;
+    reg [9:0]  userhand1y;           // hand positions
+    reg [10:0] userhand2x;
+    reg [9:0] userhand2y;
+    reg usergrab1;
+    reg usergrab2;
+    wire [12*5+13*5-1:0] holdinfo;
+    wire [23:0] gamepixel;           // output pixel from game module
+    wire vibrate1;    // vibrate outputs, worked, but too heavy on power supply
+    wire vibrate2;
 
-  // just in case, sync everything with clock for the camera/tracking output
-  reg trackingBlank, trackingHsync, trackingVsync;
-  reg [23:0] trackingGreenPixel, trackingRedPixel;
-  always @(posedge clk) begin
-    trackingBlank <= blank;
-    trackingHsync <= hsync;
-    trackingVsync <= vsync;
-    trackingGreenPixel <= greenScreenPixel;
-    trackingRedPixel <= redScreenPixel;
-  end
 
-   always @(*) begin
+
+    wire reset2 = button3Clean;  // gameplay reset button
+
+    always @(posedge clock_1) begin
+        infoin1 = {reset2, hcount, vcount, hsync, vsync, blank, userhand1x, userhand1y, userhand2x, userhand2y, usergrab2, usergrab1};  /// assign first infoin
+    end
+
+    always @(posedge vsync) begin
+        userhand1x <= (3*xSmoothGreen)>>1;       //  scales output from tracking module, different sized screens
+        userhand1y <= (3*ySmoothGreen)>>1;
+        userhand2x <= (3*xSmoothRed)>>1;
+        userhand2y <= (3*ySmoothRed)>>1;
+    end
+
+
+
+    assign	user1[2] = vibrate1;
+    assign	user1[3] = vibrate2;             // output of vibrate signal
+
+    always@(posedge clock_1) begin
+        usergrab1<= user1[0];                        // input of grab
+        usergrab2<= user1[1];
+    end
+
+    // mapeditor mapeditor(.infoin(infoin1), .switch (switch[1]), .screenxin(screenx), .screenyin(screeny), .screenx(screenxmap), .screeny(screenymap));
+    handholds holds(.clockin(clock_1), .infoin(infoin1), .switch(switch[2]),
+                    .screenx(screenx), .screeny(screeny),  .infout(infoin2),
+                    .exists(exists1), .clockout(clock_2));
+    grab       grab(.clockin(clock_2), .infoin(infoin2), .existsin(exists1),
+                    .infout(infoin3), .existsout(exists2), .clockout(clock_3),
+                    .vibrate1(vibrate1), .vibrate2(vibrate2));
+    movement   move(.infoin(infoin3), .screenxin(screenx), .screenyin(screeny),
+                    .switch(switch[2]), .screenx(screenx), .screeny(screeny));
+    pixelinfo pixelmod(.clockin(clock_3),.infoin(infoin3), .screenx(screenx),
+                       .screeny(screeny), .exists(exists2), .pclock(pclock),
+                       .phsync(phsync), .pvsync(pvsync), .pblank(pblank), .pixel(gamepixel));
+    // calls all the modules from gameplay block
+
+
+
+
+   reg finalclock;
+
+
+   always @(*) begin                                // uses blocking assignmets to avoid syncing issues with clocks
        // show pixel based on screen setting
        case (screenSetting)
-           2'd0: begin
-                   pixel <= trackingGreenPixel;
-                   b <= trackingBlank;
-                   hs <= trackingHsync;
-                   vs <= trackingVsync;
-               end
-           2'd1: begin
-                   pixel <= trackingRedPixel;
-                   b <= trackingBlank;
-                   hs <= trackingHsync;
-                   vs <= trackingVsync;
-               end
-           default: begin
-                   pixel <= gamepixel;
-                   b <= pblank;
-                   hs <= phsync;
-                   vs <= pvsync;
-               end
+           2'd0: begin pixel = greenScreenPixel;b = blank; hs = hsync;vs = vsync; finalclock =clk; end           // chooses output from green screen calbration
+           2'd1: begin pixel = redScreenPixel;b = blank; hs = hsync;vs = vsync; finalclock =clk; end             // red screen calibration
+           default: begin pixel = gamepixel;b = pblank; hs = phsync;vs = pvsync; finalclock =pclock;end          // or gameplay, notice pipelined clocks and auxillary info
        endcase
+        // blank from xvga display
+        // hsync from xvga display
+        // vsync from xvga display
    end
+
+
+
 
    // VGA Output.  In order to meet the setup and hold times of the
    // AD7125, we send it ~clk.
-   assign vga_out_red = pixel[23:16];
-   assign vga_out_green = pixel[15:8];
-   assign vga_out_blue = pixel[7:0];
+   assign vga_out_red = {pixel[23:16]};
+   assign vga_out_green = {pixel[15:8]};                     //// output to vga
+   assign vga_out_blue = {pixel[7:0]};
    assign vga_out_sync_b = 1'b1;    // not used
-   assign vga_out_pixel_clock = ~clk;
+   assign vga_out_pixel_clock = ~finalclock;
    assign vga_out_blank_b = ~b;
    assign vga_out_hsync = hs;
    assign vga_out_vsync = vs;
@@ -774,7 +825,7 @@ module vram_display(reset,clk,hcount,vcount,vr_pixel,
     output [17:0] vr_pixel;
     output [18:0] vram_addr;
     input [35:0]  vram_read_data;
-    input [2:0] switches;
+    input [2:0] switches; // NO LONGER USED
 
     // forecast hcount & vcount 4 clock cycles ahead to get data from ZBT
     // hcount goes to 1344
@@ -798,36 +849,7 @@ module vram_display(reset,clk,hcount,vcount,vr_pixel,
         next_vr_data = (hc2==1'b0) ? vram_read_data : next_vr_data;
     end
 
-    // create blocks for display
-    //blob #(.WIDTH(64), .HEIGHT(64), .COLOR(24'hF0_00_00))
-        //redOnGreen(.x(0), .y(361), .hcount(hcount), .vcount(vcount),
-            //.pixel(redOnGreenPixel)); // red half way down left side, green bg
-    //blob #(.WIDTH(64), .HEIGHT(64), .COLOR(24'h00_F0_00))
-        //greenOnRed(.x(960), .y(0), .hcount(hcount), .vcount(vcount),
-            //.pixel(greenOnRedPixel)); // green in top right, red bg
-    //blob #(.WIDTH(64), .HEIGHT(64), .COLOR(24'hF0_F0_F0))
-        //whiteOnBlack(.x(480), .y(722), .hcount(hcount), .vcount(vcount),
-            //.pixel(whiteOnBlackPixel)); // white center bottom, black BG
-
-    // based on switches, figure out which blob to output	 
-    //assign blobPixel = switches[1] ? {redOnGreenPixel[23:18], redOnGreenPixel[15:10], redOnGreenPixel[7:2]} :
-                            //(switches[0] ? {greenOnRedPixel[23:18], greenOnRedPixel[15:10], greenOnRedPixel[7:2]} :
-                            //{whiteOnBlackPixel[23:18], whiteOnBlackPixel[15:10], whiteOnBlackPixel[7:2]});
-    //assign bgPixel = switches[1] ? 18'o00_70_00 : (switches[0] ? 18'o70_00_00 : 18'o00_00_00);
-
-    // each 36-bit word from RAM is decoded to 2 segments
-    // black is displayed if there is not another feed (eg around the camera)
-    //assign normalPixel = (hcount >= 720 || vcount >= 460) ? 18'd0 : (hc2 == 2'd1 ? last_vr_data[17:0] : last_vr_data[35:0]);
-    //assign vr_pixel = (switches[2]) ? normalPixel : (blobPixel ? blobPixel: bgPixel);
-
     assign vr_pixel = (hcount >= 720 || vcount >= 460) ? 18'd0 : (hc2 == 2'd1 ? last_vr_data[17:0] : last_vr_data[35:0]);
-
-    //always @(*) begin
-        //case (hc2)
-            //2'd1: vr_pixel = (switch || (hcount < 720 && vcount < 480)) ? last_vr_data[17:0] : 18'b000000_000000_000000;
-            //2'd0: vr_pixel = (switch || (hcount < 720 && vcount < 480)) ? last_vr_data[35:18] : 18'b000000_000000_000000;
-        //endcase
-    //end
 
 endmodule // vram_display
 

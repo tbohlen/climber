@@ -3,9 +3,8 @@
 // Date: 12/7/2013
 // Author: Turner Bohlen <turnerbohlen@gmail.com>
 //
-// Stores the last three positions for each x and y and tries to smooth out
-// their motion, assuming how fast a human using the program will move their
-// hand and how fast they can accelerate.
+// Averages the last four x and y values and averages them to create the
+// outputs, effectively implementing a low-pass filter.
 
 module smoother( input clk, input reset, input [9:0] x, input [9:0] y, output [9:0] smoothedX, output [9:0] smoothedY);
     reg[39:0] xDelay, yDelay;

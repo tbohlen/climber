@@ -11,9 +11,9 @@ module pixelinfo#(parameter width =48, height = 20)
 	output pclock,
 	output reg  pvsync,
 	output reg phsync,
-    output reg pblank
+	output reg pblank
    );
-	
+
 
 
   wire [10:0] hcount;
@@ -27,16 +27,14 @@ module pixelinfo#(parameter width =48, height = 20)
   wire usergrab1;
   wire usergrab2;
   wire reset;
-
-  assign {reset, clock_65mhz, hcount, vcount, hsync, vsync, blank, userhand1x, userhand1y, userhand2x, userhand2y, usergrab2, usergrab1} = infoin;
+  assign {reset, clock_65mhz, hcount, vcount, hsync, vsync, blank, userhand1x, userhand1y, userhand2x, userhand2y, usergrab2, usergrab1} = infoin;     /// assign inputs
   assign vclock = clockin;
-  always @(posedge vclock) {pvsync,phsync, pblank} <= {vsync,hsync, blank};
-  assign pclock = clockin;
-  
+  always @(posedge vclock) {pvsync,phsync,pblank} <= {vsync,hsync,blank};        //// pipeline output h,vsync, and blank 
+  assign pclock = clockin;                                                        //// pipeline clock
 
 
 	reg [5:0]border;
-	reg finalborder;
+	reg finalborder;          //// inittially holds had borders, this was removed becuase it was not able to be implimented cleanly
 	reg [12:0]multiplier;
 	reg [20:0] r;
 	reg [20:0] g;
@@ -45,17 +43,17 @@ module pixelinfo#(parameter width =48, height = 20)
 
 
   always @(*) begin
-		
-		
+
+
 		if (((-1* screeny +(768-vcount))<(2**11)))
-			multiplier = (-1* screeny +(768-vcount));
+			multiplier = (-1* screeny +(768-vcount));            //// gradient calculations for each horrizontal stripe in the background
 		else
 			multiplier = 2**11;
-		
-		
-		
+
+
+
 		r = ('hAA*multiplier>>>11);
-		g = ('h88*multiplier>>>11);
+		g = ('h88*multiplier>>>11);              /// multiply the pixel by the multiplier, then shift, creates gradient
 		b = ('h33*multiplier>>>11);
    end
 
@@ -80,12 +78,14 @@ module pixelinfo#(parameter width =48, height = 20)
 
         else if (exists==1)                                                     //wall
          pixel <= 24'h00_FF_FF;
+		else if ((vcount +screeny== -(2000 + 768/2))||(vcount +screeny== -(2000 + 768/2)-1)||(vcount+screeny == -(2000 + 768/2)+1))
+		 pixel <= 24'h00_00_00;
 
       else begin                                                       //bg
-			if ((screeny+vcount-768<=-( 2**11))||screeny + vcount >768)
+			if ((screeny+vcount-768<=-( 2**11))||screeny + vcount >768)       //// if above gradient cuttoff, just give solid color (avoids overflow)
 				pixel <=24'hAA8833;
 			else 
-         pixel <= { r[7:0],  g[7:0], b[7:0]};
+         pixel <= { r[7:0],  g[7:0], b[7:0]};                           ///// otherwise use gradient
 	   end
    end
 

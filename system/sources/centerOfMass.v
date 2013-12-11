@@ -12,7 +12,9 @@
 //
 // All pixels which contain the selected color above the stored or input
 // minimum value and both other colors a certain stored or input value below
-// that value are included in the calculation.
+// that value are included in the calculation. Pixels are weigted based on the
+// color of adjacent pixels. The more pixels nearby that are red, the more
+// heavily weighted the pixel.
 //
 // All qualifying pixels' positions are averaged, and the result is output.
 //
@@ -20,12 +22,15 @@
 // into a separate module). 8 input switches are used to input the minimum color
 // (switches 7-4) and minimum color difference (switches 3-0). The 'set' and
 // 'reset' buttons toggle the mode. When reset is pressed any stored values are
-// discarded and the values from the switches
+// discarded and the values from the switches are used to calculate the center
+// of mas. When the "set" button is pressed, the current value of the switches
+// is stored and used in all future calculation, irrespective of the current
+// state of the switches.
 //
 module centerOfMass(input clk, input reset, input [17:0] pixel,
                     input [10:0] x, input [9:0] y, input [1:0] colorSelect,
                     output [9:0] xCenter, output [9:0] yCenter,
-                    output included, input [7:0] switches, input setButton, input resetButton, output reg set);
+                    output included, input [7:0] switches, input setButton, input resetButton);
 
 	 reg [22:0] total;
 	 reg [31:0] xTotal, yTotal;
@@ -68,6 +73,7 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
     reg oldSet, oldReset;
     wire setEdge = setButton & ~oldSet;
     wire resetEdge = resetButton & ~oldReset;
+	 reg set;
 
     always @(posedge clk) begin
         oldSet <= setButton;
@@ -77,7 +83,8 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
             setColorDiff <= {switches[3:0], 1'b1};
             setColorMin <= {switches[7:4], 1'b1};
         end
-        if (resetEdge) set <= 0;
+        else if (resetEdge) set <= 0;
+		  else set <= set;
     end
 
     wire [4:0] colorDiff = set ? setColorDiff : {switches[3:0], 1'b1};
@@ -93,9 +100,8 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
     wire [4:0] otherColor1 = (colorSelect == 2'd0) ? color1 : ((colorSelect == 2'd1) ? color2 : color0);
     wire [4:0] otherColor2 = (colorSelect == 2'd0) ? color2 : ((colorSelect == 2'd1) ? color0 : color1);
 
-     // check to make sure this is a valid pixel
-     wire valid = y < 786 && x < 1024;
-
+    // check to make sure this is a valid pixel
+    wire valid = y < 786 && x < 1024&& x > 4;
     assign included = mainColor > colorMin &&
                     (otherColor1 < mainColor) &&
                     (mainColor - otherColor1 > colorDiff) &&
@@ -136,11 +142,14 @@ module centerOfMass(input clk, input reset, input [17:0] pixel,
                 yTop <= yTotal;
                 xBottom <= total;
                 yBottom <= total;
+                // these are not reset to zero because one must include the
+                // pixel at 0,0
                 xTotal <= included ? {19'd0, xValue} : 32'd0;
                 yTotal <= included ? {19'd0, yValue} : 32'd0;
                 total <= included ? {20'd0, weight} : 23'd0;
             end
             else begin
+                // increment values if this is not the first pixel
                 xTotal <= included ? xTotal + {19'd0, xValue} : xTotal;
                 yTotal <= included ? yTotal + {19'd0, yValue} : yTotal;
                 total <= included ? total + {20'd0, weight} : total;

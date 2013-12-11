@@ -172,6 +172,9 @@ module ntsc_to_zbt(clk, vclk, fvh, dataValid, dataIn, ntsc_addr, ntsc_data, fram
    wire [8:0] y_addr = y_delay[18:10] - 9'd12;
    wire [9:0] x_addr = x_delay[19:10];
 
+	// mirror the x address so that motion is more intuitive to the user
+	wire [9:0] x_addr_mirror = 10'd719 - x_addr;
+
    // reverse the x address so that we have a mirrored screen (more natural to
    // user)
    wire [9:0] x_addr_flipped = 10'd719 - x_addr;
